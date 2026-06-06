@@ -224,6 +224,9 @@ def resultado_para_verbas(resultado: dict, data_base: str) -> list[dict]:
     verbas = []
     for v in resultado.get("verbas", []):
         val = float(v.get("valor_hist", 0) or 0)
+        # Ignora verbas com valor zero — serão absorvidas em "Outros" se necessário
+        if val == 0:
+            continue
         verbas.append({
             "verba": v.get("verba", ""),
             "competencia": v.get("competencia") or data_base,
@@ -233,4 +236,25 @@ def resultado_para_verbas(resultado: dict, data_base: str) -> list[dict]:
             "memoria": v.get("memoria", ""),
             "obs": v.get("obs", ""),
         })
+
+    # Se o tipo for inicial e há valor da causa declarado,
+    # verifica se o total das verbas identificadas é menor.
+    # A diferença entra como "Outros (a discriminar)".
+    valor_causa = float(resultado.get("valor_da_causa") or 0)
+    tipo = resultado.get("tipo_peca", "")
+    if tipo == "inicial" and valor_causa > 0:
+        total_verbas = sum(v["valor_hist"] for v in verbas)
+        diff = round(valor_causa - total_verbas, 2)
+        # Adiciona "Outros" se a diferença for > 1% do valor da causa
+        if diff > valor_causa * 0.01:
+            verbas.append({
+                "verba": "Outros (a discriminar)",
+                "competencia": data_base,
+                "valor_hist": diff,
+                "prob": "Possível",
+                "deferido": None,
+                "memoria": f"Diferença entre valor da causa (R$ {valor_causa:,.2f}) e verbas identificadas",
+                "obs": "Verbas sem valor discriminado na petição — ajustar manualmente",
+            })
+
     return verbas
