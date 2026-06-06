@@ -151,11 +151,21 @@ div[data-testid="stHorizontalBlock"] .stButton>button{width:100%;}
 /* Remove apenas menu e footer */
 #MainMenu,footer{visibility:hidden!important;}
 [data-testid="stHeader"],[data-testid="stToolbar"],
-[data-testid="stDecoration"]{display:none!important;}
-/* Sobe tudo para cima compensando o espaco reservado pelo Streamlit */
-.stApp{margin-top:-80px!important;}
-section[data-testid="stSidebar"]{top:0!important;padding-top:0!important;}
-[data-testid="block-container"]{padding-top:0!important;}
+[data-testid="stDecoration"]{display:none!important;height:0!important;}
+/* Remove padding do topo — todos os seletores possíveis */
+.stApp,.main,.stMain,
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewContainer"],
+div.block-container,
+.block-container{
+  padding-top:0!important;
+  margin-top:0!important;}
+section[data-testid="stSidebar"],
+[data-testid="stSidebarContent"]{
+  padding-top:0!important;
+  margin-top:0!important;
+  top:0!important;}
 
 /* Remove espaço branco do topo */
 [data-testid="block-container"]{padding-top:0!important;margin-top:0!important;}
