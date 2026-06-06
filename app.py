@@ -149,16 +149,25 @@ section[data-testid="stSidebar"] label{color:rgba(255,255,255,.7)!important;
 .stButton>button:hover{background:#00A9E0!important;}
 div[data-testid="stHorizontalBlock"] .stButton>button{width:100%;}
 
-/* Remove Streamlit branding */
-#MainMenu,footer,header{visibility:hidden;}
+/* Remove Streamlit branding mas mantém sidebar toggle */
+#MainMenu{visibility:hidden;}
+footer{visibility:hidden;}
+header{visibility:hidden;}
 
-/* Seta de abrir/fechar sidebar — visível e colorida */
-[data-testid="collapsedControl"]{
-  background:#003B5C!important;border-radius:0 8px 8px 0!important;
-  width:28px!important;}
-[data-testid="collapsedControl"] svg{fill:#00A9E0!important;color:#00A9E0!important;}
-button[kind="headerNoPadding"],[data-testid="stSidebarCollapsedControl"]{
-  color:#00A9E0!important;}
+/* Botão de abrir sidebar — sempre visível e colorido */
+[data-testid="collapsedControl"],
+section[data-testid="stSidebarCollapsedControl"],
+div[data-testid="collapsedControl"]{
+  visibility:visible!important;
+  background:#003B5C!important;
+  border-radius:0 12px 12px 0!important;
+  width:32px!important;height:60px!important;
+  top:40%!important;position:fixed!important;left:0!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  box-shadow:3px 0 10px rgba(0,0,0,.2)!important;cursor:pointer!important;z-index:999!important;}
+[data-testid="collapsedControl"] svg,
+[data-testid="collapsedControl"] button{
+  color:#00A9E0!important;fill:#00A9E0!important;visibility:visible!important;}
 </style>
 """, unsafe_allow_html=True)
 
