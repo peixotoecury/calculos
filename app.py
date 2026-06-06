@@ -10,12 +10,13 @@ import json
 import pandas as pd
 import streamlit as st
 
-from modules.extractor   import extrair_texto, contar_paginas
-from modules.calculator  import calcular_lista, totalizar, formatar_brl
-from modules.excel_export import gerar_excel
-from modules.pdf_report  import gerar_pdf
-from modules.indices     import get_indices
-from modules.ai_parser   import extrair_com_ia, resultado_para_verbas
+from modules.extractor        import extrair_texto, contar_paginas
+from modules.calculator       import calcular_lista, totalizar, formatar_brl
+from modules.excel_export     import gerar_excel
+from modules.pdf_report       import gerar_pdf
+from modules.indices          import get_indices
+from modules.ai_parser        import extrair_com_ia, resultado_para_verbas
+from modules.calculos_encargos import calcular_encargos_completo
 
 # ---------------------------------------------------------------------------
 # Página
@@ -107,6 +108,7 @@ def _init():
         "calculado": False,
         "resultados": [],
         "totais": {},
+        "encargos": {},
         "processo": {},
     }
     for k, v in defs.items():
@@ -165,7 +167,14 @@ with st.sidebar:
     data_ajuizamento = st.text_input("Ajuizamento (MM/AAAA)", placeholder="ex: 03/2023")
 
     st.markdown("---")
-    st.markdown('<div style="font-size:10px;color:rgba(255,255,255,.4);text-align:center;">v2.0 · Jun/2026<br>Motor ADC 58 / STF</div>',
+    st.markdown("### 💼 Encargos")
+    perc_hon = st.slider("Honorários advocatícios (%)", 0, 30, 10, 1)
+    aliq_sat = st.selectbox("SAT (Acidente do Trabalho)",
+        [1, 2, 3], index=2,
+        format_func=lambda x: f"{x}% — {'Risco Leve' if x==1 else 'Risco Médio' if x==2 else 'Risco Grave'}")
+
+    st.markdown("---")
+    st.markdown('<div style="font-size:10px;color:rgba(255,255,255,.4);text-align:center;">v2.0 · Jun/2026<br>Motor ADC 58 / STF · CPC 25</div>',
                 unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
@@ -305,12 +314,40 @@ with tab_upload:
 
                 # Calcula automaticamente
                 resultados = calcular_lista(verbas, data_base=data_base, metodo=metodo)
-                # Preserva prob e memoria
                 for i, r in enumerate(resultados):
                     r["prob"] = verbas[i].get("prob", "Possível")
                     r["memoria"] = verbas[i].get("memoria", "")
+
+                # Calcula n_meses do período contratual
+                def _meses_periodo(adm, dem):
+                    try:
+                        import re as _re
+                        def _ym(s):
+                            s = str(s or "").strip()
+                            m = _re.search(r"(\d{1,2})[/\-](\d{4})", s)
+                            if m: return int(m.group(2))*12 + int(m.group(1))
+                            return None
+                        a, d = _ym(adm), _ym(dem)
+                        if a and d and d > a: return d - a
+                    except Exception: pass
+                    return 12
+
+                n_meses = _meses_periodo(
+                    resultado.get("admissao",""),
+                    resultado.get("demissao","")
+                )
+
+                encargos = calcular_encargos_completo(
+                    resultados,
+                    n_meses=n_meses,
+                    perc_honorarios=perc_hon/100,
+                    aliq_sat=aliq_sat/100,
+                )
+
                 st.session_state["resultados"] = resultados
                 st.session_state["totais"] = totalizar(resultados)
+                st.session_state["encargos"] = encargos
+                st.session_state["processo"]["n_meses"] = n_meses
                 st.session_state["calculado"] = True
 
             except Exception as e:
@@ -455,6 +492,72 @@ with tab_resultado:
           </table>
         </div>
         """, unsafe_allow_html=True)
+
+        # --------------------------------------------------------
+        # QUADROS FINANCEIROS COMPLETOS
+        # --------------------------------------------------------
+        enc = st.session_state.get("encargos", {})
+        if enc:
+            st.markdown("---")
+            st.markdown("### 📑 Quadro Financeiro Completo")
+
+            col_q1, col_q2 = st.columns(2)
+
+            with col_q1:
+                st.markdown("#### Créditos e Descontos do Reclamante")
+                st.markdown(f"""
+                <div class="tbl-wrap">
+                <table class="pc-table" style="min-width:0">
+                  <thead><tr><th>Descrição</th><th class="num">Valor</th></tr></thead>
+                  <tbody>
+                    <tr><td>Verbas</td><td class="num">{formatar_brl(enc['total_verbas'])}</td></tr>
+                    <tr><td>FGTS 8%</td><td class="num">{formatar_brl(enc['fgts_devido'])}</td></tr>
+                    <tr style="font-weight:700;background:#f0f9ff"><td><b>Bruto Devido ao Reclamante</b></td><td class="num"><b>{formatar_brl(enc['bruto'])}</b></td></tr>
+                    <tr class="deduct"><td>(−) Depósito FGTS</td><td class="num">({formatar_brl(enc['fgts_devido'])})</td></tr>
+                    <tr class="deduct"><td>(−) INSS Segurado</td><td class="num">({formatar_brl(enc['inss_segurado'])})</td></tr>
+                    <tr class="deduct"><td>(−) IR (RRA)</td><td class="num">({formatar_brl(enc['ir_devido'])})</td></tr>
+                    <tr class="total-row"><td><b>Líquido ao Reclamante</b></td><td class="num"><b>{formatar_brl(enc['liquido_reclamante'])}</b></td></tr>
+                  </tbody>
+                </table>
+                </div>
+                """, unsafe_allow_html=True)
+
+            with col_q2:
+                st.markdown("#### Débitos do Reclamado")
+                st.markdown(f"""
+                <div class="tbl-wrap">
+                <table class="pc-table" style="min-width:0">
+                  <thead><tr><th>Descrição</th><th class="num">Valor</th></tr></thead>
+                  <tbody>
+                    <tr><td>Líquido ao Reclamante</td><td class="num">{formatar_brl(enc['liquido_reclamante'])}</td></tr>
+                    <tr><td>Depósito FGTS</td><td class="num">{formatar_brl(enc['fgts_devido'])}</td></tr>
+                    <tr><td>Multa FGTS 40%</td><td class="num">{formatar_brl(enc['multa_fgts_40'])}</td></tr>
+                    <tr><td>INSS Empresa (20%)</td><td class="num">{formatar_brl(enc['inss_empresa'])}</td></tr>
+                    <tr><td>SAT ({int(enc.get('sat',0)/max(enc.get('base_inss',1),1)*100):.0f}%)*</td><td class="num">{formatar_brl(enc['sat'])}</td></tr>
+                    <tr><td>Honorários ({int(enc['perc_honorarios']*100)}%)</td><td class="num">{formatar_brl(enc['honorarios'])}</td></tr>
+                    <tr class="total-row"><td><b>Total Devido pelo Reclamado</b></td><td class="num" style="font-size:16px;color:#00A9E0"><b>{formatar_brl(enc['total_reclamado'])}</b></td></tr>
+                  </tbody>
+                </table>
+                </div>
+                """, unsafe_allow_html=True)
+
+            # KPI total reclamado em destaque
+            st.markdown(f"""
+            <div style="background:linear-gradient(135deg,#001e36,#003B5C);border-radius:12px;
+                padding:20px;text-align:center;margin-top:16px;">
+              <div style="color:rgba(255,255,255,.6);font-size:11px;font-weight:700;
+                  text-transform:uppercase;letter-spacing:1px;">
+                PROVISÃO TOTAL — VALOR A PAGAR PELO RECLAMADO
+              </div>
+              <div style="color:#00A9E0;font-size:32px;font-weight:900;margin-top:8px;">
+                {formatar_brl(enc['total_reclamado'])}
+              </div>
+              <div style="color:rgba(255,255,255,.5);font-size:11px;margin-top:6px;">
+                Líquido ao Reclamante: {formatar_brl(enc['liquido_reclamante'])} &nbsp;|&nbsp;
+                Encargos: {formatar_brl(enc['total_reclamado'] - enc['liquido_reclamante'])}
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
 
         # Downloads
         st.markdown("---")
