@@ -484,6 +484,34 @@ with tab_res:
         st.markdown('<div class="info-box">ℹ️ Faça o upload e análise na aba <b>Documento & Análise</b>.</div>',
                     unsafe_allow_html=True)
     else:
+        # ── Botão Recalcular ──
+        col_rc1, col_rc2 = st.columns([1, 4])
+        with col_rc1:
+            if st.button("🔄 Recalcular", use_container_width=True,
+                         help="Aplica nova data-base e índice sem chamar a IA novamente"):
+                verbas_salvas = st.session_state["verbas_calc"]
+                if verbas_salvas:
+                    novos = calcular_lista(verbas_salvas, data_base=data_base, metodo=metodo)
+                    for i, r in enumerate(novos):
+                        r["prob"]    = verbas_salvas[i].get("prob", "Possível")
+                        r["memoria"] = verbas_salvas[i].get("memoria", "")
+                    from modules.calculos_encargos import calcular_encargos_completo
+                    n_m = st.session_state["processo"].get("n_meses", 12)
+                    enc_novo = calcular_encargos_completo(novos, n_meses=n_m,
+                                                          perc_honorarios=perc_hon/100,
+                                                          aliq_sat=aliq_sat/100)
+                    st.session_state["resultados"] = novos
+                    st.session_state["totais"]     = totalizar(novos)
+                    st.session_state["encargos"]   = enc_novo
+                    st.session_state["processo"]["data_base"] = data_base
+                    st.session_state["processo"]["metodo"]    = metodo
+                    st.rerun()
+        with col_rc2:
+            st.markdown(f'<div style="padding:8px 0;font-size:12px;color:#6B7F93;">'
+                        f'Data-base atual: <b>{st.session_state["processo"].get("data_base","—")}</b>'
+                        f' &nbsp;→&nbsp; Nova: <b>{data_base}</b></div>',
+                        unsafe_allow_html=True)
+
         res  = st.session_state["resultados"]
         tot  = st.session_state["totais"]
         enc  = st.session_state["encargos"]
