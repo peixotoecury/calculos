@@ -274,19 +274,23 @@ st.components.v1.html("""
   function fixHeader(){
     var hdr = doc.querySelector('.hdr');
     if(!hdr) return;
-    // Posiciona fixed no topo, ponta a ponta
-    hdr.style.position = 'fixed';
-    hdr.style.top = '0';
-    hdr.style.left = '0';
-    hdr.style.right = '0';
-    hdr.style.zIndex = '9999';
-    hdr.style.marginBottom = '0';
-    hdr.style.borderRadius = '0';
-    // Adiciona padding no container pai para compensar
-    var block = doc.querySelector('[data-testid="block-container"]');
-    if(block) block.style.paddingTop = '80px';
+    // Sidebar width
     var sidebar = doc.querySelector('[data-testid="stSidebar"]');
-    if(sidebar) sidebar.style.paddingTop = '70px';
+    var sw = sidebar ? sidebar.offsetWidth : 0;
+    // Header fixed ponta a ponta, acima de tudo
+    hdr.style.cssText += [
+      'position:fixed','top:0','left:0','right:0',
+      'z-index:99999','margin:0','border-radius:0',
+      'padding-left:'+(sw+24)+'px'
+    ].join('!important;')+'!important;';
+    // Empurra o conteúdo para baixo
+    var block = doc.querySelector('[data-testid="block-container"]');
+    if(block) block.style.setProperty('padding-top','72px','important');
+    // Sidebar não cobre o header
+    if(sidebar){
+      sidebar.style.setProperty('z-index','99998','important');
+      sidebar.style.setProperty('padding-top','70px','important');
+    }
   }
 
   function abrirSidebar(){
