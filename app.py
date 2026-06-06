@@ -151,6 +151,14 @@ div[data-testid="stHorizontalBlock"] .stButton>button{width:100%;}
 
 /* Remove Streamlit branding */
 #MainMenu,footer,header{visibility:hidden;}
+
+/* Seta de abrir/fechar sidebar — visível e colorida */
+[data-testid="collapsedControl"]{
+  background:#003B5C!important;border-radius:0 8px 8px 0!important;
+  width:28px!important;}
+[data-testid="collapsedControl"] svg{fill:#00A9E0!important;color:#00A9E0!important;}
+button[kind="headerNoPadding"],[data-testid="stSidebarCollapsedControl"]{
+  color:#00A9E0!important;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -185,20 +193,21 @@ with st.sidebar:
     st.markdown("""
     <div style="padding:20px 16px 18px 16px;
       border-bottom:1px solid rgba(0,169,224,.2);margin-bottom:16px;">
-      <div style="display:flex;align-items:flex-end;line-height:1;margin-bottom:2px;">
-        <span style="font-size:36px;font-weight:900;color:#fff;letter-spacing:-2px;">LAW</span>
+      <!-- Wordmark LAWgico -->
+      <div style="display:flex;align-items:flex-end;line-height:1;">
+        <span style="font-size:38px;font-weight:900;color:#fff;letter-spacing:-2px;">LAW</span>
         <div style="display:flex;flex-direction:column;align-items:flex-start;">
-          <span style="font-size:10px;font-weight:600;color:#00A9E0;letter-spacing:2px;
-            margin-bottom:-2px;text-transform:uppercase;">cálculos</span>
-          <span style="font-size:36px;font-weight:300;color:#fff;letter-spacing:-2px;
+          <span style="font-size:10px;font-weight:700;color:#00A9E0;letter-spacing:2.5px;
+            margin-bottom:-1px;text-transform:uppercase;line-height:1;">cálculos com IA</span>
+          <span style="font-size:38px;font-weight:300;color:#fff;letter-spacing:-2px;
             line-height:1;">gico</span>
         </div>
       </div>
-      <div style="font-size:9px;color:rgba(255,255,255,.6);letter-spacing:3px;
-        font-weight:400;margin-top:2px;text-transform:uppercase;">com IA</div>
-      <div style="font-size:9px;color:rgba(255,255,255,.4);letter-spacing:2px;
-        font-weight:300;margin-top:3px;text-transform:uppercase;">
-        Peixoto &amp; Cury Advogados</div>
+      <!-- Taglines -->
+      <div style="font-size:9px;color:rgba(255,255,255,.55);letter-spacing:3px;
+        font-weight:400;margin-top:4px;text-transform:uppercase;">lawyers at work</div>
+      <div style="font-size:9px;color:rgba(255,255,255,.35);letter-spacing:1.5px;
+        font-weight:300;margin-top:3px;">Peixoto &amp; Cury Advogados</div>
     </div>
     """, unsafe_allow_html=True)
 
