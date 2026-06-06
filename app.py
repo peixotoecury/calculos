@@ -19,38 +19,48 @@ from modules.calculos_encargos import calcular_encargos_completo
 # ─────────────────────────────────────────────
 # Página
 # ─────────────────────────────────────────────
-st.set_page_config(page_title="Cálculos P&C", page_icon="⚖️", layout="wide",
-                   initial_sidebar_state="expanded")
+st.set_page_config(page_title="LAWgico — Cálculos Trabalhistas", page_icon="⚖️",
+                   layout="wide", initial_sidebar_state="expanded")
 
 # ─────────────────────────────────────────────
 # CSS — Identidade P&C (igual aos demais sistemas)
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
-html,body,[class*="css"]{font-family:'IBM Plex Sans',system-ui,sans-serif!important;}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+html,body,[class*="css"]{font-family:'Inter',sans-serif!important;}
 
-/* ── Sidebar ── */
+/* ── Sidebar — mesmo padrão LAWgico ── */
 section[data-testid="stSidebar"]{
-  background:linear-gradient(180deg,#001e36 0%,#003B5C 100%)!important;
-  border-right:1px solid rgba(0,169,224,.15);}
+  background:linear-gradient(160deg,#001e36 0%,#003B5C 100%)!important;
+  border-right:none;}
 section[data-testid="stSidebar"] *{color:#fff!important;}
 section[data-testid="stSidebar"] .stSelectbox>div>div,
 section[data-testid="stSidebar"] input{
-  background:rgba(255,255,255,.07)!important;
-  border:1px solid rgba(0,169,224,.25)!important;color:#fff!important;}
+  background:rgba(255,255,255,.08)!important;
+  border:1px solid rgba(0,169,224,.3)!important;color:#fff!important;
+  border-radius:6px!important;}
 section[data-testid="stSidebar"] label{color:rgba(255,255,255,.7)!important;
-  font-size:10px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:.6px!important;}
+  font-size:10px!important;font-weight:700!important;
+  text-transform:uppercase!important;letter-spacing:.7px!important;}
 
-/* ── Header ── */
-.pc-header{background:#fff;border-bottom:1px solid rgba(0,59,92,.14);
-  box-shadow:0 2px 10px rgba(0,59,92,.08);padding:10px 20px;
-  display:flex;align-items:center;gap:14px;margin-bottom:20px;border-radius:10px;}
-.pc-header img{height:44px;background:#003B5C;border-radius:8px;padding:5px;}
-.pc-header-title{font-size:16px;font-weight:700;color:#003B5C;}
-.pc-header-sub{font-size:11px;color:#6B7F93;margin-top:2px;}
-.badge-ia{background:#003B5C;color:#00A9E0;font-size:10px;font-weight:800;
-  padding:2px 9px;border-radius:10px;margin-left:8px;letter-spacing:.5px;}
+/* ── Topbar LAWgico ── */
+.lg-topbar{background:linear-gradient(135deg,#001e36 0%,#003B5C 100%);
+  padding:14px 24px;display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 12px rgba(0,0,0,.3);border-radius:10px;margin-bottom:20px;}
+.lg-logo{display:flex;align-items:center;gap:12px;}
+.lg-icon{width:38px;height:38px;background:#00A9E0;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:13px;color:#fff;letter-spacing:-1px;flex-shrink:0;}
+.lg-name{font-size:19px;font-weight:700;color:#fff;letter-spacing:.3px;}
+.lg-sub{font-size:11px;color:#90c8e0;font-weight:400;margin-top:1px;}
+.lg-right{display:flex;align-items:center;gap:10px;}
+.lg-tag{background:#10b981;color:#fff;font-size:10px;font-weight:700;
+  padding:3px 9px;border-radius:10px;letter-spacing:.3px;}
+.lg-escritorio{color:#90c8e0;font-size:12px;}
+.badge-ia{background:rgba(0,169,224,.25);border:1px solid #00A9E0;color:#00A9E0;
+  font-size:10px;font-weight:700;padding:2px 9px;border-radius:10px;
+  margin-left:6px;letter-spacing:.5px;}
 
 /* ── Cards ── */
 .sk{background:#fff;border:1px solid rgba(0,59,92,.12);border-radius:10px;
@@ -168,12 +178,17 @@ if _key:
 # ─────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
-    <div style="text-align:center;padding:18px 0 20px 0;
-      border-bottom:1px solid rgba(0,169,224,.2);margin-bottom:18px;">
-      <img src="https://www.peixotoecury.com.br/assets/images/ui/logo-light.png"
-        style="height:48px;background:#003B5C;border-radius:8px;padding:6px;" />
-      <div style="font-size:11px;font-weight:600;color:#90c8e0;margin-top:8px;">
-        Cálculos Trabalhistas · IA</div>
+    <div style="text-align:center;padding:16px 0 20px 0;
+      border-bottom:1px solid rgba(0,169,224,.2);margin-bottom:16px;">
+      <div style="display:inline-flex;align-items:center;gap:10px;justify-content:center;">
+        <div style="width:36px;height:36px;background:#00A9E0;border-radius:8px;
+          display:flex;align-items:center;justify-content:center;
+          font-weight:900;font-size:13px;color:#fff;letter-spacing:-1px;">LG</div>
+        <div style="text-align:left;">
+          <div style="font-size:17px;font-weight:700;color:#fff;">LAWgico</div>
+          <div style="font-size:10px;color:#90c8e0;">Cálculos Trabalhistas · IA</div>
+        </div>
+      </div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -220,15 +235,17 @@ with st.sidebar:
 # Header
 # ─────────────────────────────────────────────
 st.markdown("""
-<div class="pc-header">
-  <img src="https://www.peixotoecury.com.br/assets/images/ui/logo-light.png"/>
-  <div>
-    <div class="pc-header-title">
-      Cálculos P&amp;C <span class="badge-ia">IA</span>
+<div class="lg-topbar">
+  <div class="lg-logo">
+    <div class="lg-icon">LG</div>
+    <div>
+      <div class="lg-name">LAWgico <span class="badge-ia">IA</span></div>
+      <div class="lg-sub">Cálculos Trabalhistas com IA</div>
     </div>
-    <div class="pc-header-sub">
-      Plataforma de Cálculos Trabalhistas · Peixoto &amp; Cury Advogados
-    </div>
+  </div>
+  <div class="lg-right">
+    <span class="lg-tag">P&amp;C</span>
+    <span class="lg-escritorio">Peixoto &amp; Cury Advogados</span>
   </div>
 </div>
 """, unsafe_allow_html=True)
