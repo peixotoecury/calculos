@@ -201,8 +201,8 @@ with st.sidebar:
     hoje = datetime.date.today()
     meses = [f"{m:02d}/{y}" for y in range(hoje.year, hoje.year-3, -1)
              for m in range(12, 0, -1)][:48]
-    data_base = st.selectbox("Mês-base do cálculo", meses, index=0)
     data_ajuizamento = st.text_input("Data ajuizamento (MM/AAAA)", placeholder="03/2023")
+    data_base = st.selectbox("Mês-base do cálculo", meses, index=0)
 
     st.markdown("---")
     st.markdown("**ENCARGOS**")
@@ -556,21 +556,25 @@ with tab_res:
         st.markdown("---")
         st.markdown("### Exportar")
         dc1, dc2 = st.columns(2)
-        proc_info = {**proc}
+        tipo_r2 = proc.get("tipo_peca","inicial")
+        r_ini = res if tipo_r2=="inicial" else []
+        r_lau = res if tipo_r2=="laudo"   else []
+        r_sen = res if tipo_r2 in ("sentenca","acordao") else []
+        nome_arq = proc.get("reclamante","processo").replace(" ","_")
         with dc1:
             try:
-                xls = gerar_excel(res, tot, proc_info)
-                st.download_button("📊 Baixar Excel",data=xls,
-                    file_name=f"CalcPC_{proc.get('reclamante','').replace(' ','_')}.xlsx",
+                xls = gerar_excel(proc, r_ini, r_lau, r_sen, metodo)
+                st.download_button("📊 Baixar Excel", data=xls,
+                    file_name=f"CalcPC_{nome_arq}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True)
             except Exception as e:
                 st.error(f"Excel: {e}")
         with dc2:
             try:
-                pdf = gerar_pdf(res, tot, proc_info)
-                st.download_button("📄 Baixar PDF",data=pdf,
-                    file_name=f"CalcPC_{proc.get('reclamante','').replace(' ','_')}.pdf",
+                pdf = gerar_pdf(proc, r_ini, r_lau, r_sen, metodo)
+                st.download_button("📄 Baixar PDF", data=pdf,
+                    file_name=f"CalcPC_{nome_arq}.pdf",
                     mime="application/pdf", use_container_width=True)
             except Exception as e:
                 st.error(f"PDF: {e}")

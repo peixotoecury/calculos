@@ -43,15 +43,17 @@ TEXTO DA PEÇA:
 DATA-BASE DO CÁLCULO: {data_base}
 
 REGRAS CRÍTICAS PARA INICIAL:
-1. TODAS as verbas devem ter prob = "Possível" — na fase de inicial não há decisão, tudo é risco possível (CPC 25)
+1. TODAS as verbas devem ter prob = "Possível" — fase inicial, sem decisão (CPC 25)
 2. Extraia CADA verba individualmente com seu valor pleiteado
-3. Se a petição não discrimina o valor de uma verba mas informa o VALOR DA CAUSA total, distribua proporcionalmente ou use o valor da causa como referência
-4. Se uma verba tem valor estimado na petição, use esse valor em valor_hist
-5. Se não há valor individual mas há cálculo implícito (ex: "X horas × Y salário"), calcule e informe
-6. Inclua TODAS as verbas mencionadas, mesmo as genéricas, com a melhor estimativa possível
-7. O total das verbas deve ser próximo ao valor da causa declarado na petição
-8. Para verbas sem valor discriminado: estime com base nos dados do contrato (salário, período, jornada)
-9. A competência deve ser o mês de encerramento do período de apuração da verba
+3. Se a petição tem valor explícito por verba → use esse valor
+4. Se a petição tem VALOR DA CAUSA mas NÃO discrimina por verba:
+   - Use o valor da causa como valor_hist da primeira verba (ou distribua entre as verbas)
+   - NÃO deixe todas as verbas com R$ 0 — o total deve se aproximar do valor da causa
+5. Se há cálculo implícito na petição (ex: "55 horas × R$ 13,18 × 111 dias"), CALCULE e use o resultado
+6. Para verbas sem valor algum mas com dados suficientes (salário, período, jornada), estime
+7. O TOTAL de valor_hist de todas as verbas DEVE ser próximo ao valor da causa declarado
+8. Se não conseguir estimar uma verba, coloque valor_hist = 0 e explique em obs
+9. Competência = mês de encerramento do período de apuração da verba
 
 Retorne APENAS este JSON:
 {{
