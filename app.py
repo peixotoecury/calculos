@@ -147,13 +147,20 @@ with st.sidebar:
 
     st.markdown("### ⚙️ Configurações")
 
-    # API Key
-    api_key_env = os.environ.get("ANTHROPIC_API_KEY", "")
+    # API Key — lê do Streamlit Secrets (deploy) ou env local
+    _secret_key = ""
+    try:
+        _secret_key = st.secrets.get("ANTHROPIC_API_KEY", "")
+    except Exception:
+        pass
+    if not _secret_key:
+        _secret_key = os.environ.get("ANTHROPIC_API_KEY", "")
+
     api_key = st.text_input(
         "Chave Anthropic (Claude)",
-        value=api_key_env,
+        value=_secret_key,
         type="password",
-        help="Obtida em console.anthropic.com"
+        help="Obtida em console.anthropic.com — em produção, use Streamlit Secrets"
     )
     if api_key:
         os.environ["ANTHROPIC_API_KEY"] = api_key
@@ -365,6 +372,8 @@ with tab_manual:
         "Vale Alimentação", "Reflexos em DSR", "Horas In Itinere", "Comissões",
         "PLR / Participação nos Lucros", "Salários Atrasados", "Rescisão Indireta",
         "Acúmulo de Função", "Indenização por Dispensa", "Honorários Periciais",
+        "TR (Taxa Referencial)", "Auxílio Home Office",
+        "Adicional de Sobreaviso", "Equiparação Salarial",
         "Outra Verba",
     ]
 
