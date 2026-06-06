@@ -147,14 +147,13 @@ def _ajustar_colunas(ws, larguras: list[int]):
 # ---------------------------------------------------------------------------
 # Abas de verbas
 # ---------------------------------------------------------------------------
-LARG_PECA = [4, 30, 12, 18, 20, 20, 20, 18, 25]
+LARG_PECA = [4, 34, 14, 18, 20, 24, 20, 28]
 
 def _cols_peca(metodo: str) -> list[str]:
-    """Colunas — nome simples, nota de rodape explica o indice."""
     return [
         "#", "Verba", "Competencia", "Valor Historico (R$)",
-        "Corr. Monetaria (R$)", "Juros * (R$)",
-        "Juros pos-nov/2021 * (R$)", "Total Atualizado (R$)", "Obs."
+        "Corr. Monetaria (R$)", "Juros Morat. (R$) - SELIC/IPCA/TR",
+        "Total Atualizado (R$)", "Obs."
     ]
 
 def _nota_rodape(metodo: str) -> str:
@@ -194,14 +193,14 @@ def _aba_peca(wb: Workbook, nome_aba: str, titulo: str, processo: dict,
         if deferido == "Nao":
             obs = "INDEFERIDO"
 
+        juros_total = r.get("juros", 0.0) + r.get("selic_pos", 0.0)
         vals = [
             r.get("seq", "-"),
             r.get("verba", ""),
             r.get("competencia", ""),
             r.get("valor_hist", 0.0),
             r.get("cm", 0.0),
-            r.get("juros", 0.0),
-            r.get("selic_pos", 0.0),
+            juros_total,
             r.get("total", 0.0),
             obs,
         ]
@@ -211,8 +210,8 @@ def _aba_peca(wb: Workbook, nome_aba: str, titulo: str, processo: dict,
 
         total_hist  += r.get("valor_hist", 0.0)
         total_cm    += r.get("cm", 0.0)
-        total_juros += r.get("juros", 0.0)
-        total_selic += r.get("selic_pos", 0.0)
+        total_juros += juros_total
+        total_selic  = 0.0
         total_geral += r.get("total", 0.0)
 
     # Linha de total
@@ -221,7 +220,6 @@ def _aba_peca(wb: Workbook, nome_aba: str, titulo: str, processo: dict,
         round(total_hist, 2),
         round(total_cm, 2),
         round(total_juros, 2),
-        round(total_selic, 2),
         round(total_geral, 2),
         ""
     ])
