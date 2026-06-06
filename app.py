@@ -189,19 +189,33 @@ if _key:
 # Sidebar
 # ─────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("""
-    <div style="padding:20px 16px 18px 16px;border-bottom:1px solid rgba(0,169,224,.15);margin-bottom:16px;">
-      <div style="display:flex;align-items:flex-end;line-height:1;margin-bottom:3px;">
-        <span style="font-size:42px;font-weight:900;color:#fff;letter-spacing:-2px;">LAW</span>
-        <div style="display:flex;flex-direction:column;align-items:flex-start;">
-          <span style="font-size:10px;font-weight:400;color:rgba(255,255,255,.8);letter-spacing:1px;align-self:flex-end;margin-bottom:-1px;">cálculos</span>
-          <span style="font-size:42px;font-weight:300;color:#fff;letter-spacing:-2px;line-height:1;">gico</span>
+    st.components.v1.html("""
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;900&display=swap');
+      *{margin:0;padding:0;box-sizing:border-box;}
+      body{background:transparent;font-family:'Inter',sans-serif;}
+      .wrap{padding:16px 16px 14px 16px;border-bottom:1px solid rgba(0,169,224,.2);}
+      .wm{display:flex;align-items:flex-end;line-height:1;}
+      .law{font-size:38px;font-weight:900;color:#ffffff;letter-spacing:-2px;}
+      .col{display:flex;flex-direction:column;align-items:flex-start;}
+      .mod{font-size:10px;font-weight:400;color:rgba(255,255,255,.85);
+           letter-spacing:1px;align-self:flex-end;margin-bottom:-1px;}
+      .gico{font-size:38px;font-weight:300;color:#ffffff;letter-spacing:-2px;line-height:1;}
+      .tag{font-size:9px;color:rgba(255,255,255,.6);letter-spacing:3px;margin-top:5px;}
+      .sub{font-size:9px;color:rgba(255,255,255,.35);letter-spacing:1px;margin-top:3px;}
+    </style>
+    <div class="wrap">
+      <div class="wm">
+        <span class="law">LAW</span>
+        <div class="col">
+          <span class="mod">c&#225;lculos</span>
+          <span class="gico">gico</span>
         </div>
       </div>
-      <div style="font-size:9px;color:rgba(255,255,255,.6);letter-spacing:3px;margin-top:2px;">lawyers at work</div>
-      <div style="font-size:9px;color:rgba(255,255,255,.35);letter-spacing:1px;margin-top:4px;">Peixoto &amp; Cury Advogados</div>
+      <div class="tag">lawyers at work</div>
+      <div class="sub">Peixoto &amp; Cury Advogados</div>
     </div>
-    """, unsafe_allow_html=True)
+    """, height=105, scrolling=False)
 
     if _key:
         st.markdown('<div style="font-size:11px;color:#10b981;">✅ IA configurada</div>',
