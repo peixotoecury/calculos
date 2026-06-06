@@ -148,25 +148,16 @@ section[data-testid="stSidebar"] label{color:rgba(255,255,255,.7)!important;
 .stButton>button:hover{background:#00A9E0!important;}
 div[data-testid="stHorizontalBlock"] .stButton>button{width:100%;}
 
-/* Remove Streamlit branding mas mantém sidebar toggle */
+/* Remove apenas menu e footer, mantém header/toggle da sidebar */
 #MainMenu{visibility:hidden;}
 footer{visibility:hidden;}
-header{visibility:hidden;}
 
-/* Botão de abrir sidebar — sempre visível e colorido */
-[data-testid="collapsedControl"],
-section[data-testid="stSidebarCollapsedControl"],
-div[data-testid="collapsedControl"]{
-  visibility:visible!important;
-  background:#003B5C!important;
-  border-radius:0 12px 12px 0!important;
-  width:32px!important;height:60px!important;
-  top:40%!important;position:fixed!important;left:0!important;
-  display:flex!important;align-items:center!important;justify-content:center!important;
-  box-shadow:3px 0 10px rgba(0,0,0,.2)!important;cursor:pointer!important;z-index:999!important;}
-[data-testid="collapsedControl"] svg,
-[data-testid="collapsedControl"] button{
-  color:#00A9E0!important;fill:#00A9E0!important;visibility:visible!important;}
+/* Estiliza o botão nativo de colapso da sidebar */
+[data-testid="collapsedControl"]{
+  background-color:#003B5C!important;
+  border-radius:0 8px 8px 0!important;}
+[data-testid="collapsedControl"] svg{
+  fill:#00A9E0!important;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -260,13 +251,21 @@ with st.sidebar:
 # ─────────────────────────────────────────────
 _hoje_str = datetime.date.today().strftime("%A, %d de %B de %Y").capitalize()
 
-# Força sidebar aberta via JS
+# Força sidebar aberta via JS — tenta várias vezes
 st.components.v1.html("""
 <script>
-  setTimeout(function(){
-    var btn = window.parent.document.querySelector('[data-testid="collapsedControl"]');
-    if(btn) btn.click();
-  }, 300);
+function abrirSidebar(){
+  var doc = window.parent.document;
+  var btn = doc.querySelector('[data-testid="collapsedControl"]');
+  if(btn){ btn.click(); return true; }
+  return false;
+}
+// Tenta em vários momentos pois o Streamlit carrega em etapas
+if(!abrirSidebar()){
+  [100,300,600,1000,2000].forEach(function(t){
+    setTimeout(abrirSidebar, t);
+  });
+}
 </script>
 """, height=0)
 
