@@ -150,20 +150,24 @@ with st.sidebar:
     # API Key — lê do Streamlit Secrets (deploy) ou env local
     _secret_key = ""
     try:
-        _secret_key = st.secrets.get("ANTHROPIC_API_KEY", "")
+        _secret_key = st.secrets["ANTHROPIC_API_KEY"]
     except Exception:
-        pass
-    if not _secret_key:
         _secret_key = os.environ.get("ANTHROPIC_API_KEY", "")
 
-    api_key = st.text_input(
-        "Chave Anthropic (Claude)",
-        value=_secret_key,
-        type="password",
-        help="Obtida em console.anthropic.com — em produção, use Streamlit Secrets"
-    )
-    if api_key:
-        os.environ["ANTHROPIC_API_KEY"] = api_key
+    # Em produção (Streamlit Cloud) esconde o campo — chave já está nos Secrets
+    if _secret_key:
+        os.environ["ANTHROPIC_API_KEY"] = _secret_key
+        api_key = _secret_key
+        st.markdown('<div style="font-size:11px;color:rgba(255,255,255,0.5);">✅ Chave configurada via Secrets</div>',
+                    unsafe_allow_html=True)
+    else:
+        api_key = st.text_input(
+            "Chave Anthropic (Claude)",
+            type="password",
+            help="Obtida em console.anthropic.com"
+        )
+        if api_key:
+            os.environ["ANTHROPIC_API_KEY"] = api_key
 
     st.markdown("---")
 
