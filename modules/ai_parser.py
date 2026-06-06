@@ -35,12 +35,23 @@ Regras obrigatórias:
 
 Responda EXCLUSIVAMENTE com JSON válido, sem texto antes ou depois."""
 
-PROMPT_INICIAL = """Analise esta PETIÇÃO INICIAL trabalhista e elabore a tabela de verbas pleiteadas.
+PROMPT_INICIAL = """Analise esta PETIÇÃO INICIAL trabalhista e elabore a tabela completa de verbas pleiteadas.
 
 TEXTO DA PEÇA:
 {texto}
 
 DATA-BASE DO CÁLCULO: {data_base}
+
+REGRAS CRÍTICAS PARA INICIAL:
+1. TODAS as verbas devem ter prob = "Possível" — na fase de inicial não há decisão, tudo é risco possível (CPC 25)
+2. Extraia CADA verba individualmente com seu valor pleiteado
+3. Se a petição não discrimina o valor de uma verba mas informa o VALOR DA CAUSA total, distribua proporcionalmente ou use o valor da causa como referência
+4. Se uma verba tem valor estimado na petição, use esse valor em valor_hist
+5. Se não há valor individual mas há cálculo implícito (ex: "X horas × Y salário"), calcule e informe
+6. Inclua TODAS as verbas mencionadas, mesmo as genéricas, com a melhor estimativa possível
+7. O total das verbas deve ser próximo ao valor da causa declarado na petição
+8. Para verbas sem valor discriminado: estime com base nos dados do contrato (salário, período, jornada)
+9. A competência deve ser o mês de encerramento do período de apuração da verba
 
 Retorne APENAS este JSON:
 {{
@@ -51,21 +62,28 @@ Retorne APENAS este JSON:
   "admissao": "MM/YYYY ou null",
   "demissao": "MM/YYYY ou null",
   "salario_base": número_ou_null,
+  "valor_da_causa": número_ou_null,
   "verbas": [
     {{
-      "verba": "nome da verba",
+      "verba": "nome exato da verba conforme petição",
       "competencia": "MM/YYYY",
       "valor_hist": número,
-      "prob": "Possível|Provável|Remoto",
-      "memoria": "como foi calculado ou extraído",
-      "obs": "observação se houver"
+      "prob": "Possível",
+      "memoria": "fórmula ou fonte do valor — ex: 2h extras × R$ 13,18 × 111 dias × fator 1,5",
+      "obs": "observação relevante"
     }}
   ],
-  "observacoes_gerais": "alertas do contador"
+  "observacoes_gerais": "total valor causa, verbas sem valor discriminado, alertas"
 }}"""
 
 PROMPT_SENTENCA = """Analise esta SENTENÇA TRABALHISTA (e a inicial se fornecida) e elabore
 o cálculo de liquidação com todas as verbas deferidas e indeferidas.
+
+REGRAS DE PROBABILIDADE (CPC 25):
+- DEFERIDO na sentença = "Provável" (condenação já existe, > 50% de perda)
+- INDEFERIDO na sentença = "Remoto" (< 25%, empresa tem decisão favorável)
+- Em recurso / parcialmente deferido = "Possível" (25-50%)
+- Se não há informação sobre o deferimento = "Possível"
 
 {texto_inicial_bloco}
 

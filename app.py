@@ -155,8 +155,8 @@ with st.sidebar:
         ["SELIC_ADC58", "IPCAE_1PCT", "TR_1PCT", "SEM_CORRECAO"],
         format_func=lambda x: {
             "SELIC_ADC58":  "IPCA-E + SELIC (ADC 58 ✓)",
-            "IPCAE_1PCT":   "IPCA-E + 1% a.m.",
-            "TR_1PCT":      "TR + 1% a.m. (pré-ADC 58)",
+            "IPCAE_1PCT":   "IPCA-E + 1% ao mês",
+            "TR_1PCT":      "TR + 1% ao mês (pré-ADC 58)",
             "SEM_CORRECAO": "Sem correção",
         }[x])
 
@@ -493,13 +493,36 @@ with tab_resultado:
         </div>
         """, unsafe_allow_html=True)
 
+        # Data-base usada
+        db_usado = proc.get("data_base", data_base)
+        st.markdown(f'<div class="info-box">📅 <b>Cálculo atualizado até:</b> {db_usado} &nbsp;|&nbsp; '
+                    f'⚖️ {proc.get("metodo","—")} &nbsp;|&nbsp; '
+                    f'📋 Tipo: {proc.get("tipo_peca","—").upper()}</div>',
+                    unsafe_allow_html=True)
+
+        # Aviso CPC 25 para inicial
+        if proc.get("tipo_peca") == "inicial":
+            st.markdown("""
+            <div class="warn-box">
+            📌 <b>Análise de Risco — Petição Inicial (CPC 25):</b>
+            Na fase inicial, todas as verbas são classificadas como <b>Possível</b>
+            (chance de perda entre 25-50%) — não há decisão judicial ainda.
+            O cálculo abaixo representa o <b>risco máximo</b> caso todos os pedidos sejam deferidos.
+            </div>""", unsafe_allow_html=True)
+
         # --------------------------------------------------------
         # QUADROS FINANCEIROS COMPLETOS
         # --------------------------------------------------------
         enc = st.session_state.get("encargos", {})
         if enc:
             st.markdown("---")
-            st.markdown("### 📑 Quadro Financeiro Completo")
+            tipo_q = proc.get("tipo_peca","")
+            titulo_q = {
+                "inicial": "📑 Cálculo Puro — Risco Máximo (se todos os pedidos forem deferidos)",
+                "sentenca": "📑 Cálculo de Liquidação",
+                "laudo": "📑 Cálculo Pericial",
+            }.get(tipo_q, "📑 Quadro Financeiro Completo")
+            st.markdown(f"### {titulo_q}")
 
             col_q1, col_q2 = st.columns(2)
 
@@ -594,20 +617,50 @@ with tab_ajuda:
 
 | Peça | O que a IA faz |
 |------|---------------|
-| **Inicial** | Lê os pedidos → monta verbas com valor pleiteado + risco |
-| **Sentença** | Lê inicial + sentença → verbas deferidas/indeferidas → calcula CM + juros |
-| **Laudo** | Lê inicial + laudo → usa valores do perito → calcula CM + juros |
+| **Inicial** | Lê os pedidos → extrai cada verba com valor pleiteado → tudo classificado como **Possível** |
+| **Sentença** | Lê inicial + sentença → identifica deferidos/indeferidos → calcula CM + juros + encargos |
+| **Laudo** | Lê inicial + laudo pericial → usa valores apurados pelo perito → calcula CM + juros + encargos |
 
-### Probabilidade por verba
-- **Provável** — deferido na sentença / apurado pelo perito (> 50%)
-- **Possível** — em recurso / pleiteado sem decisão
-- **Remoto** — indeferido na sentença
+---
 
-### Índice de correção (ADC 58 STF)
-| Fase | Período | Índice |
-|------|---------|--------|
-| 1 | Competência → out/2021 | IPCA-E + 1% a.m. simples |
-| 2 | nov/2021 → data-base | SELIC acumulada (BCB) |
+### Classificação de Risco — CPC 25
+
+| Classificação | Probabilidade | Tratamento Contábil |
+|---|---|---|
+| **Provável** | > 50% de perda | **Provisionar no Passivo** — obrigatório registrar como despesa |
+| **Possível** | 25% a 50% | **Divulgar em Nota Explicativa** — não provisiona, mas informa |
+| **Remoto** | < 25% | **Nenhuma ação** — nem provisão nem nota explicativa |
+
+**Quando usar cada um:**
+- **Inicial sem decisão** → tudo **Possível** (não há condenação ainda)
+- **Sentença desfavorável** (condenação) → verba deferida = **Provável**
+- **Sentença favorável** (improcedente) → **Remoto**
+- **Recurso pendente** → mantém **Possível**
+- **Acórdão reformando sentença** → reclassifica conforme nova decisão
+
+---
+
+### Índice de Correção Monetária (ADC 58 — STF 18/11/2021)
+
+| Fase | Período | Correção | Juros |
+|------|---------|----------|-------|
+| 1 | Competência → out/2021 | IPCA-E acumulado | 1% ao mês simples s/ valor histórico |
+| 2 | nov/2021 → data-base | SELIC acumulada (BCB) | embutida na SELIC |
+
+---
+
+### Encargos calculados automaticamente
+
+| Encargo | Base | Quem paga |
+|---------|------|-----------|
+| FGTS 8% | Verbas com incidência | Empregador (recolher em conta) |
+| Multa FGTS 40% | FGTS devido | Empregador |
+| INSS Segurado | Verbas salariais (tabela progressiva 2025) | Desconto do reclamante |
+| INSS Empresa 20% + SAT | Verbas salariais | Empregador |
+| IR (RRA) | Base tributável / nº meses | Desconto do reclamante |
+| Honorários | % sobre bruto (configurável) | Empregador |
+
+---
 
 ### Dúvidas
 Controladoria Time B · Peixoto & Cury Advogados
