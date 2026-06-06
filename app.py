@@ -148,9 +148,21 @@ section[data-testid="stSidebar"] label{color:rgba(255,255,255,.7)!important;
 .stButton>button:hover{background:#00A9E0!important;}
 div[data-testid="stHorizontalBlock"] .stButton>button{width:100%;}
 
-/* Remove apenas menu e footer, mantém header/toggle da sidebar */
+/* Remove apenas menu e footer */
 #MainMenu{visibility:hidden;}
 footer{visibility:hidden;}
+
+/* Linha azul ponta a ponta no topo — padrão LAWgico */
+[data-testid="stAppViewContainer"]::before{
+  content:'';display:block;height:5px;
+  background:linear-gradient(90deg,#001e36 0%,#00A9E0 50%,#003B5C 100%);
+  position:fixed;top:0;left:0;right:0;z-index:9999;}
+
+/* Reduz espaço no topo do conteúdo */
+[data-testid="stAppViewContainer"]>[data-testid="stVerticalBlock"]{
+  padding-top:8px!important;}
+[data-testid="block-container"]{
+  padding-top:12px!important;}
 
 /* Estiliza o botão nativo de colapso da sidebar */
 [data-testid="collapsedControl"]{
@@ -265,6 +277,8 @@ with st.sidebar:
 # Header
 # ─────────────────────────────────────────────
 _hoje_str = datetime.date.today().strftime("%A, %d de %B de %Y").capitalize()
+# db_usado disponivel globalmente (atualizado após calculo)
+db_usado = st.session_state.get("processo", {}).get("data_base", "")
 
 # Força sidebar aberta via JS — tenta várias vezes
 st.components.v1.html("""
