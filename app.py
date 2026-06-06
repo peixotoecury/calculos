@@ -253,12 +253,6 @@ with st.sidebar:
     hoje = datetime.date.today()
     meses = [f"{m:02d}/{y}" for y in range(hoje.year, hoje.year-3, -1)
              for m in range(12, 0, -1)][:48]
-    _aj_date = st.date_input("Data de ajuizamento",
-                              value=datetime.date(2023, 1, 1),
-                              min_value=datetime.date(2000,1,1),
-                              max_value=datetime.date.today(),
-                              format="DD/MM/YYYY")
-    data_ajuizamento = _aj_date.strftime("%m/%Y") if _aj_date else ""
     data_base = st.selectbox("Mês-base do cálculo", meses, index=0)
 
     st.markdown("---")
@@ -357,6 +351,15 @@ with tab_up:
     labels = {"inicial":"📝 Petição Inicial (PDF ou TXT)",
                "sentenca":"⚖️ Sentença (PDF ou TXT)",
                "laudo":"📋 Laudo Pericial (PDF ou TXT)"}
+    # Ajuizamento aqui — fora da sidebar, visível
+    _aj_date = st.date_input("📅 Data de ajuizamento",
+                              value=datetime.date(2023, 1, 1),
+                              min_value=datetime.date(2000,1,1),
+                              max_value=datetime.date.today(),
+                              format="DD/MM/YYYY",
+                              help="Data em que a ação foi proposta")
+    data_ajuizamento = _aj_date.strftime("%m/%Y") if _aj_date else ""
+
     col_a, col_b = st.columns([2, 1])
     with col_a:
         arq_principal = st.file_uploader(labels[tipo], type=["pdf","txt"], key="up_p")
