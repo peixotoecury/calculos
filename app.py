@@ -150,10 +150,11 @@ with st.sidebar:
     st.markdown("### ⚙️ Parâmetros")
 
     metodo = st.selectbox("Índice de correção",
-        ["SELIC_ADC58", "IPCAE_1PCT", "SEM_CORRECAO"],
+        ["SELIC_ADC58", "IPCAE_1PCT", "TR_1PCT", "SEM_CORRECAO"],
         format_func=lambda x: {
-            "SELIC_ADC58": "IPCA-E + SELIC (ADC 58 ✓)",
-            "IPCAE_1PCT":  "IPCA-E + 1% a.m.",
+            "SELIC_ADC58":  "IPCA-E + SELIC (ADC 58 ✓)",
+            "IPCAE_1PCT":   "IPCA-E + 1% a.m.",
+            "TR_1PCT":      "TR + 1% a.m. (pré-ADC 58)",
             "SEM_CORRECAO": "Sem correção",
         }[x])
 
@@ -358,9 +359,9 @@ with tab_resultado:
                            f'<div class="kpi-value {"destaque" if dest else ""}">{val}</div></div>',
                            unsafe_allow_html=True)
 
-        # Totais por probabilidade
+        # Provisão CPC 25
         st.markdown("---")
-        st.markdown("### Provisão por Risco")
+        st.markdown("### Provisão por Risco — CPC 25")
         prov = {"Provável": 0, "Possível": 0, "Remoto": 0}
         for r in resultados:
             p = r.get("prob", "Possível")
@@ -368,13 +369,20 @@ with tab_resultado:
                 prov[p] += r.get("total", 0)
 
         pc = st.columns(3)
-        estilos = {"Provável": ("#d1fae5","#065f46"), "Possível": ("#fef3c7","#92400e"), "Remoto": ("#fee2e2","#991b1b")}
+        cpc25 = {
+            "Provável":  ("#d1fae5","#065f46","Provisionar no Passivo","Perda > 50% — CPC 25"),
+            "Possível":  ("#fef3c7","#92400e","Divulgar em Nota Explicativa","Perda 25-50% — sem provisão"),
+            "Remoto":    ("#fee2e2","#991b1b","Sem provisão / divulgação","Perda < 25% — CPC 25"),
+        }
         for i, (prob, val) in enumerate(prov.items()):
-            bg, fg = estilos[prob]
-            pc[i].markdown(f'<div class="kpi-card" style="border-left-color:{fg};background:{bg};">'
-                           f'<div class="kpi-label" style="color:{fg};">{prob}</div>'
-                           f'<div class="kpi-value" style="color:{fg};">{formatar_brl(val)}</div></div>',
-                           unsafe_allow_html=True)
+            bg, fg, acao, desc = cpc25[prob]
+            pc[i].markdown(
+                f'<div class="kpi-card" style="border-left-color:{fg};background:{bg};">'
+                f'<div class="kpi-label" style="color:{fg};">{prob}</div>'
+                f'<div class="kpi-value" style="color:{fg};">{formatar_brl(val)}</div>'
+                f'<div style="font-size:10px;color:{fg};margin-top:4px;font-weight:600;">{acao}</div>'
+                f'<div style="font-size:9px;color:{fg};opacity:.8;">{desc}</div>'
+                f'</div>', unsafe_allow_html=True)
 
         st.markdown("---")
 

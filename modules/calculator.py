@@ -68,23 +68,31 @@ def calcular_verba(
         }
 
     if metodo == "IPCAE_1PCT":
-        # IPCA-E + 1% a.m. simples para todo o periodo
         n = contar_meses(ym_comp, ym_base)
         fator_cm = get_fator_acumulado(ipca_e, ym_comp, ym_base)
         cm = valor_hist * (fator_cm - 1)
         juros = valor_hist * 0.01 * n
         total = valor_hist + cm + juros
         return {
-            "valor_hist": valor_hist,
-            "cm": cm,
-            "juros": juros,
-            "selic_pos": 0.0,
-            "total": total,
-            "fator_cm": fator_cm,
-            "fator_selic": 1.0,
-            "n_meses_fase1": n,
-            "n_meses_fase2": 0,
+            "valor_hist": valor_hist, "cm": cm, "juros": juros, "selic_pos": 0.0,
+            "total": total, "fator_cm": fator_cm, "fator_selic": 1.0,
+            "n_meses_fase1": n, "n_meses_fase2": 0,
             "metodo_desc": "IPCA-E + 1% a.m. simples",
+        }
+
+    if metodo == "TR_1PCT":
+        n = contar_meses(ym_comp, ym_base)
+        _, _, _ = get_indices()
+        from .indices import TR_FALLBACK
+        fator_cm = get_fator_acumulado(TR_FALLBACK, ym_comp, ym_base)
+        cm = valor_hist * (fator_cm - 1)
+        juros = valor_hist * 0.01 * n
+        total = valor_hist + cm + juros
+        return {
+            "valor_hist": valor_hist, "cm": cm, "juros": juros, "selic_pos": 0.0,
+            "total": total, "fator_cm": fator_cm, "fator_selic": 1.0,
+            "n_meses_fase1": n, "n_meses_fase2": 0,
+            "metodo_desc": "TR + 1% a.m. simples",
         }
 
     # ---- Metodo padrao: SELIC_ADC58 ----------------------------------------
