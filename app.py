@@ -36,10 +36,16 @@ section[data-testid="stSidebar"]{
   border-right:none;}
 section[data-testid="stSidebar"] *{color:#fff!important;}
 section[data-testid="stSidebar"] .stSelectbox>div>div,
-section[data-testid="stSidebar"] input{
+section[data-testid="stSidebar"] input,
+section[data-testid="stSidebar"] input[type="text"],
+section[data-testid="stSidebar"] textarea{
   background:rgba(255,255,255,.08)!important;
-  border:1px solid rgba(0,169,224,.3)!important;color:#fff!important;
+  border:1px solid rgba(0,169,224,.3)!important;
+  color:#fff!important;caret-color:#fff!important;
   border-radius:6px!important;}
+section[data-testid="stSidebar"] input::placeholder,
+section[data-testid="stSidebar"] textarea::placeholder{
+  color:rgba(255,255,255,.4)!important;}
 section[data-testid="stSidebar"] label{color:rgba(255,255,255,.7)!important;
   font-size:10px!important;font-weight:700!important;
   text-transform:uppercase!important;letter-spacing:.7px!important;}
@@ -578,20 +584,34 @@ with tab_res:
         r_lau = res if tipo_r2=="laudo"   else []
         r_sen = res if tipo_r2 in ("sentenca","acordao") else []
         nome_arq = proc.get("reclamante","processo").replace(" ","_")
+
+        # Mapeamento de chaves para Excel/PDF
+        proc_doc = {
+            "numero":       proc.get("numero_processo",""),
+            "reclamante":   proc.get("reclamante",""),
+            "reclamada":    proc.get("reclamado",""),
+            "data_base":    proc.get("data_base", data_base),
+            "admissao":     proc.get("admissao",""),
+            "demissao":     proc.get("demissao",""),
+            "salario_base": proc.get("salario_base",""),
+            "tipo_peca":    tipo_r2,
+            "ajuizamento":  data_ajuizamento,
+            "metodo":       metodo,
+        }
         with dc1:
             try:
-                xls = gerar_excel(proc, r_ini, r_lau, r_sen, metodo)
+                xls = gerar_excel(proc_doc, r_ini, r_lau, r_sen, metodo)
                 st.download_button("📊 Baixar Excel", data=xls,
-                    file_name=f"CalcPC_{nome_arq}.xlsx",
+                    file_name=f"LAWgico_{nome_arq}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True)
             except Exception as e:
                 st.error(f"Excel: {e}")
         with dc2:
             try:
-                pdf = gerar_pdf(proc, r_ini, r_lau, r_sen, metodo)
+                pdf = gerar_pdf(proc_doc, r_ini, r_lau, r_sen, metodo)
                 st.download_button("📄 Baixar PDF", data=pdf,
-                    file_name=f"CalcPC_{nome_arq}.pdf",
+                    file_name=f"LAWgico_{nome_arq}.pdf",
                     mime="application/pdf", use_container_width=True)
             except Exception as e:
                 st.error(f"PDF: {e}")
