@@ -319,7 +319,7 @@ st.components.v1.html("""
 st.markdown(f"""
 <div class="hdr">
   <img src="https://www.peixotoecury.com.br/assets/images/ui/logo-light.png"
-    style="height:40px;background:#003B5C;border-radius:8px;padding:5px;flex-shrink:0;"/>
+    style="height:40px;flex-shrink:0;"/>
   <div class="hdr-div"></div>
   <div class="hdr-info">
     <h1>Cálculos Trabalhistas com IA</h1>
