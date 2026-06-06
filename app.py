@@ -52,11 +52,12 @@ section[data-testid="stSidebar"] label{color:rgba(255,255,255,.7)!important;
   font-size:10px!important;font-weight:700!important;
   text-transform:uppercase!important;letter-spacing:.7px!important;}
 
-/* ── Header azul escuro — padrão LAWgico ── */
+/* ── Header azul fixo no topo — ponta a ponta, padrão LAWgico ── */
 .hdr{background:linear-gradient(135deg,#001e36 0%,#003B5C 100%);
-  box-shadow:0 2px 12px rgba(0,0,0,.3);padding:10px 24px;
-  display:flex;align-items:center;gap:14px;border-radius:10px;
-  margin-bottom:20px;}
+  box-shadow:0 2px 12px rgba(0,0,0,.4);padding:10px 24px;
+  display:flex;align-items:center;gap:14px;border-radius:0;
+  margin-bottom:20px;margin-left:-4rem;margin-right:-4rem;
+  padding-left:4.5rem;padding-right:4.5rem;}
 .hdr-div{width:1px;height:40px;background:rgba(255,255,255,.15);}
 .hdr-info h1{font-size:15px;font-weight:700;color:#fff;margin:0;}
 .hdr-info .sub{font-size:10px;color:#90c8e0;margin-top:2px;}
