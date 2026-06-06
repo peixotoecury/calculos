@@ -200,27 +200,16 @@ if _key:
 # ─────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
-    <div style="padding:20px 16px 18px 16px;
-      border-bottom:1px solid rgba(0,169,224,.15);margin-bottom:16px;">
-      <div style="display:flex;align-items:flex-end;line-height:1;gap:0;">
-        <span style="font-size:40px;font-weight:900;color:#fff;
-          letter-spacing:-2px;font-family:'Inter',sans-serif;">LAW</span>
-        <div style="display:flex;flex-direction:column;align-items:flex-start;
-          justify-content:flex-end;margin-bottom:2px;">
-          <span style="font-size:10px;font-weight:400;color:rgba(255,255,255,.75);
-            letter-spacing:1px;line-height:1;margin-bottom:0px;
-            font-family:'Inter',sans-serif;">cálculos</span>
-          <span style="font-size:40px;font-weight:300;color:#fff;
-            letter-spacing:-2px;line-height:1;
-            font-family:'Inter',sans-serif;">gico</span>
+    <div style="padding:20px 16px 18px 16px;border-bottom:1px solid rgba(0,169,224,.15);margin-bottom:16px;">
+      <div style="display:flex;align-items:flex-end;line-height:1;margin-bottom:3px;">
+        <span style="font-size:42px;font-weight:900;color:#fff;letter-spacing:-2px;">LAW</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;">
+          <span style="font-size:10px;font-weight:400;color:rgba(255,255,255,.8);letter-spacing:1px;align-self:flex-end;margin-bottom:-1px;">cálculos</span>
+          <span style="font-size:42px;font-weight:300;color:#fff;letter-spacing:-2px;line-height:1;">gico</span>
         </div>
       </div>
-      <div style="font-size:9px;color:rgba(255,255,255,.6);letter-spacing:3px;
-        font-weight:400;margin-top:3px;font-family:'Inter',sans-serif;">
-        lawyers at work</div>
-      <div style="font-size:9px;color:rgba(255,255,255,.35);letter-spacing:1px;
-        margin-top:4px;font-family:'Inter',sans-serif;">
-        Peixoto &amp; Cury Advogados</div>
+      <div style="font-size:9px;color:rgba(255,255,255,.6);letter-spacing:3px;margin-top:2px;">lawyers at work</div>
+      <div style="font-size:9px;color:rgba(255,255,255,.35);letter-spacing:1px;margin-top:4px;">Peixoto &amp; Cury Advogados</div>
     </div>
     """, unsafe_allow_html=True)
 
