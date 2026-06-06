@@ -226,7 +226,11 @@ with st.sidebar:
     hoje = datetime.date.today()
     meses = [f"{m:02d}/{y}" for y in range(hoje.year, hoje.year-3, -1)
              for m in range(12, 0, -1)][:48]
-    data_ajuizamento = st.text_input("Data ajuizamento (MM/AAAA)", placeholder="03/2023")
+    _aj_date = st.date_input("Data de ajuizamento", value=None,
+                              min_value=datetime.date(2000,1,1),
+                              max_value=datetime.date.today(),
+                              format="DD/MM/YYYY")
+    data_ajuizamento = _aj_date.strftime("%m/%Y") if _aj_date else ""
     data_base = st.selectbox("Mês-base do cálculo", meses, index=0)
 
     st.markdown("---")
