@@ -1,0 +1,22 @@
+{
+  "name": "LAWgico Cálculos",
+  "short_name": "LAWgico",
+  "description": "Cálculos Trabalhistas com IA — Peixoto & Cury Advogados",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#001e36",
+  "theme_color": "#003B5C",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "https://www.peixotoecury.com.br/assets/images/ui/logo-light.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://www.peixotoecury.com.br/assets/images/ui/logo-light.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

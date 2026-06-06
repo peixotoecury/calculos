@@ -147,12 +147,35 @@ def _ajustar_colunas(ws, larguras: list[int]):
 # ---------------------------------------------------------------------------
 # Abas de verbas
 # ---------------------------------------------------------------------------
-COLS_PECA = [
-    "#", "Verba", "Competencia", "Valor Historico (R$)",
-    "Corr. Monetaria (R$)", "Juros Morat. (R$)",
-    "Atualizacao SELIC (R$)", "Total Atualizado (R$)", "Obs."
-]
-LARG_PECA = [4, 30, 12, 18, 18, 16, 18, 18, 25]
+LARG_PECA = [4, 30, 12, 18, 20, 20, 20, 18, 25]
+
+def _cols_peca(metodo: str) -> list[str]:
+    """Colunas dinamicas conforme o indice de correcao."""
+    if metodo == "SELIC_ADC58":
+        return [
+            "#", "Verba", "Competencia", "Valor Historico (R$)",
+            "IPCA-E (pre-nov/2021) (R$)",
+            "Juros 1% a.m. (pre-nov/2021) (R$)",
+            "SELIC Acumulada (pos-nov/2021) (R$)",
+            "Total Atualizado (R$)", "Obs."
+        ]
+    elif metodo in ("IPCAE_1PCT",):
+        return [
+            "#", "Verba", "Competencia", "Valor Historico (R$)",
+            "Corr. IPCA-E (R$)", "Juros 1% a.m. (R$)",
+            "— (R$)", "Total Atualizado (R$)", "Obs."
+        ]
+    elif metodo == "TR_1PCT":
+        return [
+            "#", "Verba", "Competencia", "Valor Historico (R$)",
+            "Corr. TR (R$)", "Juros 1% a.m. (R$)",
+            "— (R$)", "Total Atualizado (R$)", "Obs."
+        ]
+    return [
+        "#", "Verba", "Competencia", "Valor Historico (R$)",
+        "Corr. Monetaria (R$)", "Juros (R$)",
+        "SELIC (R$)", "Total Atualizado (R$)", "Obs."
+    ]
 
 
 def _aba_peca(wb: Workbook, nome_aba: str, titulo: str, processo: dict,
@@ -160,8 +183,9 @@ def _aba_peca(wb: Workbook, nome_aba: str, titulo: str, processo: dict,
     ws = wb.create_sheet(nome_aba)
     ws.sheet_view.showGridLines = False
 
+    metodo = processo.get("metodo", "SELIC_ADC58")
     row = _cabecalho_sheet(ws, processo, titulo, metodo_desc)
-    row = _cabecalho_tabela(ws, row, COLS_PECA)
+    row = _cabecalho_tabela(ws, row, _cols_peca(metodo))
 
     total_hist = total_cm = total_juros = total_selic = total_geral = 0.0
 

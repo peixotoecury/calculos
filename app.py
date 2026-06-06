@@ -22,6 +22,16 @@ from modules.calculos_encargos import calcular_encargos_completo
 st.set_page_config(page_title="LAWgico — Cálculos Trabalhistas", page_icon="⚖️",
                    layout="wide", initial_sidebar_state="expanded")
 
+# PWA manifest
+st.markdown("""
+<link rel="manifest" href="/app/static/manifest.json"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="LAWgico"/>
+<meta name="theme-color" content="#003B5C"/>
+""", unsafe_allow_html=True)
+
 # ─────────────────────────────────────────────
 # CSS — Identidade P&C (igual aos demais sistemas)
 # ─────────────────────────────────────────────
