@@ -39,34 +39,33 @@ section[data-testid="stSidebar"] .stSelectbox>div>div,
 section[data-testid="stSidebar"] input,
 section[data-testid="stSidebar"] input[type="text"],
 section[data-testid="stSidebar"] textarea{
-  background:rgba(255,255,255,.08)!important;
-  border:1px solid rgba(0,169,224,.3)!important;
-  color:#fff!important;caret-color:#fff!important;
+  background:rgba(255,255,255,.1)!important;
+  border:1px solid rgba(0,169,224,.4)!important;
+  color:#ffffff!important;caret-color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
   border-radius:6px!important;}
 section[data-testid="stSidebar"] input::placeholder,
 section[data-testid="stSidebar"] textarea::placeholder{
-  color:rgba(255,255,255,.4)!important;}
+  color:rgba(255,255,255,.45)!important;
+  -webkit-text-fill-color:rgba(255,255,255,.45)!important;}
 section[data-testid="stSidebar"] label{color:rgba(255,255,255,.7)!important;
   font-size:10px!important;font-weight:700!important;
   text-transform:uppercase!important;letter-spacing:.7px!important;}
 
-/* ── Topbar LAWgico ── */
-.lg-topbar{background:linear-gradient(135deg,#001e36 0%,#003B5C 100%);
-  padding:14px 24px;display:flex;align-items:center;justify-content:space-between;
-  box-shadow:0 2px 12px rgba(0,0,0,.3);border-radius:10px;margin-bottom:20px;}
-.lg-logo{display:flex;align-items:center;gap:12px;}
-.lg-icon{width:38px;height:38px;background:#00A9E0;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  font-weight:900;font-size:13px;color:#fff;letter-spacing:-1px;flex-shrink:0;}
-.lg-name{font-size:19px;font-weight:700;color:#fff;letter-spacing:.3px;}
-.lg-sub{font-size:11px;color:#90c8e0;font-weight:400;margin-top:1px;}
-.lg-right{display:flex;align-items:center;gap:10px;}
-.lg-tag{background:#10b981;color:#fff;font-size:10px;font-weight:700;
-  padding:3px 9px;border-radius:10px;letter-spacing:.3px;}
-.lg-escritorio{color:#90c8e0;font-size:12px;}
-.badge-ia{background:rgba(0,169,224,.25);border:1px solid #00A9E0;color:#00A9E0;
-  font-size:10px;font-weight:700;padding:2px 9px;border-radius:10px;
-  margin-left:6px;letter-spacing:.5px;}
+/* ── Header branco — padrão P&C ── */
+.hdr{background:#fff;border-bottom:1px solid rgba(0,59,92,.12);
+  box-shadow:0 4px 18px rgba(0,59,92,.07);padding:10px 24px;
+  display:flex;align-items:center;gap:14px;border-radius:10px;
+  margin-bottom:20px;}
+.hdr-logo{height:46px;background:#003B5C;border-radius:8px;padding:6px;}
+.hdr-div{width:1px;height:40px;background:rgba(0,59,92,.15);}
+.hdr-info h1{font-size:15px;font-weight:700;color:#003B5C;margin:0;}
+.hdr-info .sub{font-size:10px;color:#6B7F93;margin-top:2px;}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.badge-ia{background:#EAF6FB;border:1px solid rgba(0,169,224,.4);color:#003B5C;
+  font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.3px;}
+.badge-pc{background:#003B5C;color:#00A9E0;font-size:10px;font-weight:700;
+  padding:3px 10px;border-radius:20px;letter-spacing:.3px;}
 
 /* ── Cards ── */
 .sk{background:#fff;border:1px solid rgba(0,59,92,.12);border-radius:10px;
@@ -184,17 +183,12 @@ if _key:
 # ─────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
-    <div style="text-align:center;padding:16px 0 20px 0;
+    <div style="text-align:center;padding:14px 0 18px 0;
       border-bottom:1px solid rgba(0,169,224,.2);margin-bottom:16px;">
-      <div style="display:inline-flex;align-items:center;gap:10px;justify-content:center;">
-        <div style="width:36px;height:36px;background:#00A9E0;border-radius:8px;
-          display:flex;align-items:center;justify-content:center;
-          font-weight:900;font-size:13px;color:#fff;letter-spacing:-1px;">LG</div>
-        <div style="text-align:left;">
-          <div style="font-size:17px;font-weight:700;color:#fff;">LAWgico</div>
-          <div style="font-size:10px;color:#90c8e0;">Cálculos Trabalhistas · IA</div>
-        </div>
-      </div>
+      <img src="https://www.peixotoecury.com.br/assets/images/ui/logo-light.png"
+        style="height:44px;background:#003B5C;border-radius:8px;padding:6px;"/>
+      <div style="font-size:12px;font-weight:600;color:#90c8e0;margin-top:8px;
+        letter-spacing:.3px;">Cálculos Trabalhistas · IA</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -240,18 +234,19 @@ with st.sidebar:
 # ─────────────────────────────────────────────
 # Header
 # ─────────────────────────────────────────────
-st.markdown("""
-<div class="lg-topbar">
-  <div class="lg-logo">
-    <div class="lg-icon">LG</div>
-    <div>
-      <div class="lg-name">LAWgico <span class="badge-ia">IA</span></div>
-      <div class="lg-sub">Cálculos Trabalhistas com IA</div>
-    </div>
+import datetime as _dt
+_hoje_str = _dt.date.today().strftime("%A, %d de %B de %Y").capitalize()
+st.markdown(f"""
+<div class="hdr">
+  <img src="https://www.peixotoecury.com.br/assets/images/ui/logo-light.png" class="hdr-logo"/>
+  <div class="hdr-div"></div>
+  <div class="hdr-info">
+    <h1>⚖️ LAWgico — Cálculos Trabalhistas com IA</h1>
+    <div class="sub">{_hoje_str}</div>
   </div>
-  <div class="lg-right">
-    <span class="lg-tag">P&amp;C</span>
-    <span class="lg-escritorio">Peixoto &amp; Cury Advogados</span>
+  <div class="hdr-right">
+    <span class="badge-ia">IA Claude</span>
+    <span class="badge-pc">P&amp;C</span>
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -457,6 +452,42 @@ with tab_res:
                 f'<div class="val{cls}">{v}</div></div>',
                 unsafe_allow_html=True)
 
+        # ── Legenda dos três valores ──
+        v_verbas = formatar_brl(tot.get("total",0))
+        v_empresa = formatar_brl(enc.get("total_reclamado",0)) if enc else "—"
+        v_liq = formatar_brl(enc.get("liquido_reclamante",0)) if enc else "—"
+        st.markdown(f"""
+        <div style="background:#fff;border:1px solid rgba(0,59,92,.12);border-radius:10px;
+          padding:14px 18px;margin:10px 0;font-size:12px;color:#17324D;
+          box-shadow:0 1px 4px rgba(0,59,92,.06);">
+          <div style="font-size:11px;font-weight:700;color:#003B5C;text-transform:uppercase;
+            letter-spacing:.5px;margin-bottom:10px;">📖 Entenda os valores</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+            <div>
+              <div style="font-size:10px;font-weight:700;color:#6B7F93;text-transform:uppercase;">
+                🔵 Total Atualizado das Verbas</div>
+              <div style="font-size:16px;font-weight:800;color:#003B5C;margin:4px 0;">{v_verbas}</div>
+              <div style="font-size:11px;color:#6B7F93;">Soma de todas as verbas com correção
+              monetária e juros até <b>{db_usado}</b>. Ainda não inclui FGTS, INSS ou honorários.</div>
+            </div>
+            <div style="border-left:1px solid rgba(0,59,92,.1);padding-left:16px;">
+              <div style="font-size:10px;font-weight:700;color:#6B7F93;text-transform:uppercase;">
+                🟢 Líquido ao Reclamante</div>
+              <div style="font-size:16px;font-weight:800;color:#065f46;margin:4px 0;">{v_liq}</div>
+              <div style="font-size:11px;color:#6B7F93;">O que o reclamante <b>recebe na conta</b>
+              após descontar INSS, IR e depósito FGTS.</div>
+            </div>
+            <div style="border-left:1px solid rgba(0,59,92,.1);padding-left:16px;">
+              <div style="font-size:10px;font-weight:700;color:#991b1b;text-transform:uppercase;">
+                🔴 Total a Pagar pela Empresa</div>
+              <div style="font-size:16px;font-weight:800;color:#003B5C;margin:4px 0;">{v_empresa}</div>
+              <div style="font-size:11px;color:#6B7F93;"><b>Valor para provisão contábil.</b>
+              Inclui tudo: verbas + FGTS + Multa 40% + INSS empresa + SAT + honorários.</div>
+            </div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
         # ── Provisão CPC 25 ──
         st.markdown("---")
         st.markdown("### Provisão por Risco — CPC 25")
@@ -520,12 +551,25 @@ with tab_res:
           <td class="r">{formatar_brl(tot.get("total",0))}</td>
           <td></td><td></td></tr>"""
 
-        st.markdown(f"""<div class="tbl-wrap"><table class="pc-table">
+        st.markdown(f"""
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;
+          padding:10px 16px;margin-bottom:10px;font-size:12px;color:#0c4a6e;">
+          📅 <b>Data de Origem</b> = mês em que o débito nasceu (ex: férias de 2023 = 06/2023).
+          &nbsp;|&nbsp;
+          📐 <b>Atualização até:</b> <b style="color:#003B5C">{db_usado}</b>
+          &nbsp;|&nbsp;
+          🔢 Correção: {proc.get("metodo","—")}
+        </div>
+        <div class="tbl-wrap"><table class="pc-table">
           <thead><tr>
-            <th>Verba / Pedido</th><th>Competência</th>
-            <th class="r">Principal</th><th class="r">Correção</th>
-            <th class="r">Juros</th><th class="r">Total Atualizado</th>
-            <th>Memória</th><th>Prob.</th>
+            <th>Verba / Pedido</th>
+            <th>Data de Origem</th>
+            <th class="r">Valor Histórico</th>
+            <th class="r">Correção Monetária</th>
+            <th class="r">Juros</th>
+            <th class="r">Total Atualizado<br><small style="font-weight:400;opacity:.7;">até {db_usado}</small></th>
+            <th>Memória de Cálculo</th>
+            <th>Prob.</th>
           </tr></thead>
           <tbody>{linhas}</tbody></table></div>""", unsafe_allow_html=True)
 
