@@ -52,19 +52,18 @@ section[data-testid="stSidebar"] label{color:rgba(255,255,255,.7)!important;
   font-size:10px!important;font-weight:700!important;
   text-transform:uppercase!important;letter-spacing:.7px!important;}
 
-/* ── Header branco — padrão P&C ── */
-.hdr{background:#fff;border-bottom:1px solid rgba(0,59,92,.12);
-  box-shadow:0 4px 18px rgba(0,59,92,.07);padding:10px 24px;
+/* ── Header azul escuro — padrão LAWgico ── */
+.hdr{background:linear-gradient(135deg,#001e36 0%,#003B5C 100%);
+  box-shadow:0 2px 12px rgba(0,0,0,.3);padding:10px 24px;
   display:flex;align-items:center;gap:14px;border-radius:10px;
   margin-bottom:20px;}
-.hdr-logo{height:46px;background:#003B5C;border-radius:8px;padding:6px;}
-.hdr-div{width:1px;height:40px;background:rgba(0,59,92,.15);}
-.hdr-info h1{font-size:15px;font-weight:700;color:#003B5C;margin:0;}
-.hdr-info .sub{font-size:10px;color:#6B7F93;margin-top:2px;}
+.hdr-div{width:1px;height:40px;background:rgba(255,255,255,.15);}
+.hdr-info h1{font-size:15px;font-weight:700;color:#fff;margin:0;}
+.hdr-info .sub{font-size:10px;color:#90c8e0;margin-top:2px;}
 .hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
-.badge-ia{background:#EAF6FB;border:1px solid rgba(0,169,224,.4);color:#003B5C;
+.badge-ia{background:rgba(0,169,224,.2);border:1px solid #00A9E0;color:#00A9E0;
   font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.3px;}
-.badge-pc{background:#003B5C;color:#00A9E0;font-size:10px;font-weight:700;
+.badge-pc{background:rgba(255,255,255,.1);color:#fff;font-size:10px;font-weight:700;
   padding:3px 10px;border-radius:20px;letter-spacing:.3px;}
 
 /* ── Cards ── */
@@ -274,11 +273,11 @@ st.components.v1.html("""
 st.markdown(f"""
 <div class="hdr">
   <div style="display:flex;align-items:flex-end;line-height:1;gap:0;flex-shrink:0;margin-right:4px;">
-    <span style="font-size:26px;font-weight:900;color:#003B5C;letter-spacing:-1.5px;">LAW</span>
+    <span style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-1.5px;">LAW</span>
     <div style="display:flex;flex-direction:column;align-items:flex-start;">
-      <span style="font-size:9px;font-weight:400;color:#6B7F93;letter-spacing:1px;
+      <span style="font-size:9px;font-weight:400;color:rgba(255,255,255,.8);letter-spacing:1px;
         align-self:flex-end;margin-bottom:-1px;">cálculos</span>
-      <span style="font-size:26px;font-weight:300;color:#003B5C;letter-spacing:-1.5px;line-height:1;">gico</span>
+      <span style="font-size:26px;font-weight:300;color:#fff;letter-spacing:-1.5px;line-height:1;">gico</span>
     </div>
   </div>
   <div class="hdr-div"></div>
