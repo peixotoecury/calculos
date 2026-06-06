@@ -207,8 +207,8 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**ENCARGOS**")
     perc_hon = st.slider("Honorários (%)", 0, 30, 10, 1)
-    aliq_sat = st.selectbox("SAT", [1, 2, 3], index=2,
-        format_func=lambda x: f"{x}% — {'Leve' if x==1 else 'Médio' if x==2 else 'Grave'}")
+    aliq_sat = st.selectbox("SAT (Acidente do Trabalho)", [1, 2, 3], index=2,
+        format_func=lambda x: f"{x}% — Risco {'Baixo' if x==1 else 'Médio' if x==2 else 'Alto'}")
 
     st.markdown("---")
     st.markdown(
