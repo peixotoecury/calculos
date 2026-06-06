@@ -318,14 +318,8 @@ st.components.v1.html("""
 
 st.markdown(f"""
 <div class="hdr">
-  <div style="display:flex;align-items:flex-end;line-height:1;gap:0;flex-shrink:0;margin-right:4px;">
-    <span style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-1.5px;">LAW</span>
-    <div style="display:flex;flex-direction:column;align-items:flex-start;">
-      <span style="font-size:9px;font-weight:400;color:rgba(255,255,255,.8);letter-spacing:1px;
-        align-self:flex-end;margin-bottom:-1px;">cálculos</span>
-      <span style="font-size:26px;font-weight:300;color:#fff;letter-spacing:-1.5px;line-height:1;">gico</span>
-    </div>
-  </div>
+  <img src="https://www.peixotoecury.com.br/assets/images/ui/logo-light.png"
+    style="height:40px;background:#003B5C;border-radius:8px;padding:5px;flex-shrink:0;"/>
   <div class="hdr-div"></div>
   <div class="hdr-info">
     <h1>Cálculos Trabalhistas com IA</h1>
