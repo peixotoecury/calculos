@@ -260,22 +260,30 @@ with st.sidebar:
 # Header
 # ─────────────────────────────────────────────
 _hoje_str = datetime.date.today().strftime("%A, %d de %B de %Y").capitalize()
+
+# Força sidebar aberta via JS
+st.components.v1.html("""
+<script>
+  setTimeout(function(){
+    var btn = window.parent.document.querySelector('[data-testid="collapsedControl"]');
+    if(btn) btn.click();
+  }, 300);
+</script>
+""", height=0)
+
 st.markdown(f"""
 <div class="hdr">
-  <div style="display:flex;align-items:flex-end;line-height:1;gap:0;flex-shrink:0;">
-    <span style="font-size:28px;font-weight:900;color:#003B5C;letter-spacing:-1.5px;
-      font-family:'Inter',sans-serif;">LAW</span>
-    <div style="display:flex;flex-direction:column;align-items:flex-start;
-      justify-content:flex-end;margin-bottom:1px;">
+  <div style="display:flex;align-items:flex-end;line-height:1;gap:0;flex-shrink:0;margin-right:4px;">
+    <span style="font-size:26px;font-weight:900;color:#003B5C;letter-spacing:-1.5px;">LAW</span>
+    <div style="display:flex;flex-direction:column;align-items:flex-start;">
       <span style="font-size:9px;font-weight:400;color:#6B7F93;letter-spacing:1px;
-        line-height:1;font-family:'Inter',sans-serif;">cálculos</span>
-      <span style="font-size:28px;font-weight:300;color:#003B5C;letter-spacing:-1.5px;
-        line-height:1;font-family:'Inter',sans-serif;">gico</span>
+        align-self:flex-end;margin-bottom:-1px;">cálculos</span>
+      <span style="font-size:26px;font-weight:300;color:#003B5C;letter-spacing:-1.5px;line-height:1;">gico</span>
     </div>
   </div>
   <div class="hdr-div"></div>
   <div class="hdr-info">
-    <h1>⚖️ Cálculos Trabalhistas com IA</h1>
+    <h1>Cálculos Trabalhistas com IA</h1>
     <div class="sub">{_hoje_str} &nbsp;·&nbsp; Peixoto &amp; Cury Advogados</div>
   </div>
   <div class="hdr-right">
