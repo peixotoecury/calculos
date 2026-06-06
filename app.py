@@ -52,11 +52,11 @@ section[data-testid="stSidebar"] label{color:rgba(255,255,255,.7)!important;
   font-size:10px!important;font-weight:700!important;
   text-transform:uppercase!important;letter-spacing:.7px!important;}
 
-/* ── Header azul — será posicionado via JS ── */
+/* ── Header azul — colado no topo sem fixed ── */
 .hdr{background:linear-gradient(135deg,#001e36 0%,#003B5C 100%);
-  box-shadow:0 2px 12px rgba(0,0,0,.4);padding:10px 28px;
+  box-shadow:0 2px 8px rgba(0,0,0,.3);padding:10px 24px;
   display:flex;align-items:center;gap:14px;border-radius:0;
-  margin-bottom:20px;}
+  margin:0 -5rem 20px -5rem;padding-left:5.5rem;padding-right:2rem;}
 .hdr-div{width:1px;height:40px;background:rgba(255,255,255,.15);}
 .hdr-info h1{font-size:15px;font-weight:700;color:#fff;margin:0;}
 .hdr-info .sub{font-size:10px;color:#90c8e0;margin-top:2px;}
@@ -152,8 +152,12 @@ div[data-testid="stHorizontalBlock"] .stButton>button{width:100%;}
 #MainMenu{visibility:hidden;}
 footer{visibility:hidden;}
 
-/* Reduz espaço no topo */
-[data-testid="block-container"]{padding-top:10px!important;}
+/* Remove espaço branco do topo */
+[data-testid="block-container"]{padding-top:0!important;margin-top:0!important;}
+[data-testid="stAppViewContainer"]{padding-top:0!important;}
+[data-testid="stVerticalBlock"]{gap:0!important;}
+section[data-testid="stSidebar"]{padding-top:0!important;top:0!important;}
+.stApp{margin-top:0!important;}
 
 /* Estiliza o botão nativo de colapso da sidebar */
 [data-testid="collapsedControl"]{
@@ -271,27 +275,7 @@ st.components.v1.html("""
 (function(){
   var doc = window.parent.document;
 
-  function fixHeader(){
-    var hdr = doc.querySelector('.hdr');
-    if(!hdr) return;
-    // Sidebar width
-    var sidebar = doc.querySelector('[data-testid="stSidebar"]');
-    var sw = sidebar ? sidebar.offsetWidth : 0;
-    // Header fixed ponta a ponta, acima de tudo
-    hdr.style.cssText += [
-      'position:fixed','top:0','left:0','right:0',
-      'z-index:99999','margin:0','border-radius:0',
-      'padding-left:'+(sw+24)+'px'
-    ].join('!important;')+'!important;';
-    // Empurra o conteúdo para baixo
-    var block = doc.querySelector('[data-testid="block-container"]');
-    if(block) block.style.setProperty('padding-top','72px','important');
-    // Sidebar não cobre o header
-    if(sidebar){
-      sidebar.style.setProperty('z-index','99998','important');
-      sidebar.style.setProperty('padding-top','70px','important');
-    }
-  }
+  function fixHeader(){ /* simplificado — CSS resolve */ }
 
   function abrirSidebar(){
     var btn = doc.querySelector('[data-testid="collapsedControl"]');
