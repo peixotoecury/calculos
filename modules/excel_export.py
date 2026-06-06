@@ -150,32 +150,31 @@ def _ajustar_colunas(ws, larguras: list[int]):
 LARG_PECA = [4, 30, 12, 18, 20, 20, 20, 18, 25]
 
 def _cols_peca(metodo: str) -> list[str]:
-    """Colunas dinamicas conforme o indice de correcao."""
-    if metodo == "SELIC_ADC58":
-        return [
-            "#", "Verba", "Competencia", "Valor Historico (R$)",
-            "IPCA-E (pre-nov/2021) (R$)",
-            "Juros 1% a.m. (pre-nov/2021) (R$)",
-            "SELIC Acumulada (pos-nov/2021) (R$)",
-            "Total Atualizado (R$)", "Obs."
-        ]
-    elif metodo in ("IPCAE_1PCT",):
-        return [
-            "#", "Verba", "Competencia", "Valor Historico (R$)",
-            "Corr. IPCA-E (R$)", "Juros 1% a.m. (R$)",
-            "— (R$)", "Total Atualizado (R$)", "Obs."
-        ]
-    elif metodo == "TR_1PCT":
-        return [
-            "#", "Verba", "Competencia", "Valor Historico (R$)",
-            "Corr. TR (R$)", "Juros 1% a.m. (R$)",
-            "— (R$)", "Total Atualizado (R$)", "Obs."
-        ]
+    """Colunas — nome simples, nota de rodape explica o indice."""
     return [
         "#", "Verba", "Competencia", "Valor Historico (R$)",
-        "Corr. Monetaria (R$)", "Juros (R$)",
-        "SELIC (R$)", "Total Atualizado (R$)", "Obs."
+        "Corr. Monetaria (R$)", "Juros * (R$)",
+        "Juros pos-nov/2021 * (R$)", "Total Atualizado (R$)", "Obs."
     ]
+
+def _nota_rodape(metodo: str) -> str:
+    notas = {
+        "SELIC_ADC58": (
+            "* Criterio ADC 58 STF (18/11/2021) — Fase 1 (competencia ate out/2021): "
+            "Corr. Monetaria = IPCA-E acumulado | Juros = 1% a.m. simples sobre valor historico. "
+            "Fase 2 (nov/2021 em diante): 'Juros pos-nov/2021' = SELIC acumulada (BCB), "
+            "que engloba tanto a correcao monetaria quanto os juros de mora."
+        ),
+        "IPCAE_1PCT": (
+            "* Indice aplicado: IPCA-E acumulado (correcao monetaria) + 1% ao mes simples (juros de mora) "
+            "sobre o valor historico — todo o periodo."
+        ),
+        "TR_1PCT": (
+            "* Indice aplicado: TR acumulada (correcao monetaria) + 1% ao mes simples (juros de mora) "
+            "sobre o valor historico — todo o periodo."
+        ),
+    }
+    return notas.get(metodo, "* Vide criterio de calculo na aba Metodologia.")
 
 
 def _aba_peca(wb: Workbook, nome_aba: str, titulo: str, processo: dict,
@@ -226,6 +225,16 @@ def _aba_peca(wb: Workbook, nome_aba: str, titulo: str, processo: dict,
         round(total_geral, 2),
         ""
     ])
+
+    # Nota de rodapé explicando o índice
+    nota = _nota_rodape(metodo)
+    row_nota = row + 1
+    ws.merge_cells(f"A{row_nota}:I{row_nota}")
+    cn = ws[f"A{row_nota}"]
+    cn.value = nota
+    cn.font = _font(size=8, italic=True, color="6B7F93")
+    cn.alignment = _alinhar("left", wrap=True)
+    ws.row_dimensions[row_nota].height = 28
 
     _ajustar_colunas(ws, LARG_PECA)
     ws.freeze_panes = "A6"
