@@ -183,12 +183,22 @@ if _key:
 # ─────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
-    <div style="text-align:center;padding:14px 0 18px 0;
+    <div style="padding:20px 16px 18px 16px;
       border-bottom:1px solid rgba(0,169,224,.2);margin-bottom:16px;">
-      <img src="https://www.peixotoecury.com.br/assets/images/ui/logo-light.png"
-        style="height:44px;background:#003B5C;border-radius:8px;padding:6px;"/>
-      <div style="font-size:12px;font-weight:600;color:#90c8e0;margin-top:8px;
-        letter-spacing:.3px;">Cálculos Trabalhistas · IA</div>
+      <div style="display:flex;align-items:flex-end;line-height:1;margin-bottom:2px;">
+        <span style="font-size:36px;font-weight:900;color:#fff;letter-spacing:-2px;">LAW</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;">
+          <span style="font-size:10px;font-weight:600;color:#00A9E0;letter-spacing:2px;
+            margin-bottom:-2px;text-transform:uppercase;">cálculos</span>
+          <span style="font-size:36px;font-weight:300;color:#fff;letter-spacing:-2px;
+            line-height:1;">gico</span>
+        </div>
+      </div>
+      <div style="font-size:9px;color:rgba(255,255,255,.6);letter-spacing:3px;
+        font-weight:400;margin-top:2px;text-transform:uppercase;">com IA</div>
+      <div style="font-size:9px;color:rgba(255,255,255,.4);letter-spacing:2px;
+        font-weight:300;margin-top:3px;text-transform:uppercase;">
+        Peixoto &amp; Cury Advogados</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -234,15 +244,22 @@ with st.sidebar:
 # ─────────────────────────────────────────────
 # Header
 # ─────────────────────────────────────────────
-import datetime as _dt
-_hoje_str = _dt.date.today().strftime("%A, %d de %B de %Y").capitalize()
+_hoje_str = datetime.date.today().strftime("%A, %d de %B de %Y").capitalize()
 st.markdown(f"""
 <div class="hdr">
-  <img src="https://www.peixotoecury.com.br/assets/images/ui/logo-light.png" class="hdr-logo"/>
+  <div style="display:flex;align-items:flex-end;line-height:1;gap:0;flex-shrink:0;">
+    <span style="font-size:26px;font-weight:900;color:#003B5C;letter-spacing:-1.5px;">LAW</span>
+    <div style="display:flex;flex-direction:column;align-items:flex-start;">
+      <span style="font-size:9px;font-weight:700;color:#00A9E0;letter-spacing:2px;
+        margin-bottom:-2px;text-transform:uppercase;line-height:1;">cálculos</span>
+      <span style="font-size:26px;font-weight:300;color:#003B5C;letter-spacing:-1.5px;
+        line-height:1;">gico</span>
+    </div>
+  </div>
   <div class="hdr-div"></div>
   <div class="hdr-info">
-    <h1>⚖️ LAWgico — Cálculos Trabalhistas com IA</h1>
-    <div class="sub">{_hoje_str}</div>
+    <h1>⚖️ Cálculos Trabalhistas com IA</h1>
+    <div class="sub">{_hoje_str} &nbsp;·&nbsp; Peixoto &amp; Cury Advogados</div>
   </div>
   <div class="hdr-right">
     <span class="badge-ia">IA Claude</span>
