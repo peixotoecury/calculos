@@ -52,12 +52,11 @@ section[data-testid="stSidebar"] label{color:rgba(255,255,255,.7)!important;
   font-size:10px!important;font-weight:700!important;
   text-transform:uppercase!important;letter-spacing:.7px!important;}
 
-/* ── Header azul fixo no topo — ponta a ponta, padrão LAWgico ── */
+/* ── Header azul — será posicionado via JS ── */
 .hdr{background:linear-gradient(135deg,#001e36 0%,#003B5C 100%);
-  box-shadow:0 2px 12px rgba(0,0,0,.4);padding:10px 24px;
+  box-shadow:0 2px 12px rgba(0,0,0,.4);padding:10px 28px;
   display:flex;align-items:center;gap:14px;border-radius:0;
-  margin-bottom:20px;margin-left:-4rem;margin-right:-4rem;
-  padding-left:4.5rem;padding-right:4.5rem;}
+  margin-bottom:20px;}
 .hdr-div{width:1px;height:40px;background:rgba(255,255,255,.15);}
 .hdr-info h1{font-size:15px;font-weight:700;color:#fff;margin:0;}
 .hdr-info .sub{font-size:10px;color:#90c8e0;margin-top:2px;}
@@ -266,38 +265,40 @@ _hoje_str = datetime.date.today().strftime("%A, %d de %B de %Y").capitalize()
 # db_usado disponivel globalmente (atualizado após calculo)
 db_usado = st.session_state.get("processo", {}).get("data_base", "")
 
-# Linha azul ponta-a-ponta + auto-abre sidebar
+# Header ponta-a-ponta + auto-abre sidebar
 st.components.v1.html("""
 <script>
 (function(){
   var doc = window.parent.document;
 
-  // Linha azul fixa no topo
-  function addTopBar(){
-    if(doc.getElementById('lg-topbar')) return;
-    var bar = doc.createElement('div');
-    bar.id = 'lg-topbar';
-    bar.style.cssText = [
-      'position:fixed','top:0','left:0','right:0','height:5px','z-index:999999',
-      'background:linear-gradient(90deg,#001e36 0%,#00A9E0 50%,#003B5C 100%)',
-      'pointer-events:none'
-    ].join('!important;') + '!important';
-    doc.body.appendChild(bar);
+  function fixHeader(){
+    var hdr = doc.querySelector('.hdr');
+    if(!hdr) return;
+    // Posiciona fixed no topo, ponta a ponta
+    hdr.style.position = 'fixed';
+    hdr.style.top = '0';
+    hdr.style.left = '0';
+    hdr.style.right = '0';
+    hdr.style.zIndex = '9999';
+    hdr.style.marginBottom = '0';
+    hdr.style.borderRadius = '0';
+    // Adiciona padding no container pai para compensar
+    var block = doc.querySelector('[data-testid="block-container"]');
+    if(block) block.style.paddingTop = '80px';
+    var sidebar = doc.querySelector('[data-testid="stSidebar"]');
+    if(sidebar) sidebar.style.paddingTop = '70px';
   }
 
-  // Abre sidebar se fechada
   function abrirSidebar(){
     var btn = doc.querySelector('[data-testid="collapsedControl"]');
     if(btn){ btn.click(); return true; }
     return false;
   }
 
-  addTopBar();
-  if(!abrirSidebar()){
-    [200,500,1000,2000].forEach(function(t){ setTimeout(abrirSidebar,t); });
-  }
-  // Garante a barra mesmo após reruns
-  setTimeout(addTopBar, 1000);
+  [300,600,1000,2000].forEach(function(t){
+    setTimeout(fixHeader, t);
+    setTimeout(abrirSidebar, t);
+  });
 })();
 </script>
 """, height=0)
