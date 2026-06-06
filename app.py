@@ -149,13 +149,13 @@ section[data-testid="stSidebar"] label{color:rgba(255,255,255,.7)!important;
 div[data-testid="stHorizontalBlock"] .stButton>button{width:100%;}
 
 /* Remove apenas menu e footer */
-#MainMenu,footer,[data-testid="stHeader"],header{
-  display:none!important;height:0!important;min-height:0!important;
-  visibility:hidden!important;padding:0!important;margin:0!important;}
-.stApp{margin-top:0!important;padding-top:0!important;}
-[data-testid="stAppViewContainer"]{margin-top:0!important;padding-top:0!important;}
-[data-testid="block-container"]{padding-top:0!important;margin-top:0!important;}
-section[data-testid="stSidebar"]{top:0!important;padding-top:0!important;margin-top:0!important;}
+#MainMenu,footer{visibility:hidden!important;}
+[data-testid="stHeader"],[data-testid="stToolbar"],
+[data-testid="stDecoration"]{display:none!important;}
+/* Sobe tudo para cima compensando o espaco reservado pelo Streamlit */
+.stApp{margin-top:-80px!important;}
+section[data-testid="stSidebar"]{top:0!important;padding-top:0!important;}
+[data-testid="block-container"]{padding-top:0!important;}
 
 /* Remove espaço branco do topo */
 [data-testid="block-container"]{padding-top:0!important;margin-top:0!important;}
