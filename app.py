@@ -473,6 +473,15 @@ with tab_up:
 
                 n_v = len([v for v in verbas if float(v.get("valor_hist",0) or 0) > 0])
                 st.success(f"✅ {n_v} verbas com valor identificadas. Acesse **Resultado & Cálculo**.")
+
+                # ── Dados faltantes ──────────────────────────────────────
+                dados_faltantes = resultado.get("dados_faltantes") or []
+                if dados_faltantes:
+                    st.warning("⚠️ **Para calcular os valores, o sistema precisa das informações abaixo. "
+                               "Informe no campo de texto acima ou anexe o documento correspondente:**")
+                    for item in dados_faltantes:
+                        st.markdown(f"- 🔴 {item}")
+
                 if resultado.get("observacoes_gerais"):
                     st.markdown(f'<div class="info-box">💡 <b>Contador Sênior:</b> '
                                 f'{resultado["observacoes_gerais"]}</div>',

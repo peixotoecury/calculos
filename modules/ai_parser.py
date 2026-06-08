@@ -32,6 +32,12 @@ Regras obrigatórias:
 7. FGTS + multa 40%: obrigação do empregador, valor POSITIVO.
 8. Nunca invente valores. Se não encontrar, coloque 0.
 9. Em observacoes_gerais: aponte inconsistências, pedidos sem valor, alertas jurídicos.
+10. DADOS FALTANTES: se algum dado essencial não constar nos documentos, preencha o campo
+    "dados_faltantes" com lista de strings descrevendo o que falta. Exemplos:
+    - "Salário base não informado — necessário para calcular horas extras, divisor e reflexos"
+    - "Data de admissão não encontrada — necessária para calcular prescrição e períodos"
+    - "Holerites não anexados — necessários para apurar valores pagos e deduções"
+    Se nada faltar, retorne "dados_faltantes": [].
 
 Responda EXCLUSIVAMENTE com JSON válido, sem texto antes ou depois."""
 
@@ -75,7 +81,8 @@ Retorne APENAS este JSON:
       "obs": "observação relevante"
     }}
   ],
-  "observacoes_gerais": "total valor causa, verbas sem valor discriminado, alertas"
+  "observacoes_gerais": "total valor causa, verbas sem valor discriminado, alertas",
+  "dados_faltantes": ["lista de dados essenciais ausentes — vazio se nada faltar"]
 }}"""
 
 PROMPT_SENTENCA = """Analise esta SENTENÇA TRABALHISTA (e a inicial se fornecida) e elabore
@@ -115,7 +122,8 @@ Retorne APENAS este JSON:
       "obs": "observação se houver"
     }}
   ],
-  "observacoes_gerais": "alertas do contador"
+  "observacoes_gerais": "alertas do contador",
+  "dados_faltantes": ["lista de dados essenciais ausentes — vazio se nada faltar"]
 }}"""
 
 PROMPT_LAUDO = """Analise este LAUDO PERICIAL TRABALHISTA (e a inicial se fornecida) e elabore
@@ -149,7 +157,8 @@ Retorne APENAS este JSON:
       "obs": "observação se houver"
     }}
   ],
-  "observacoes_gerais": "alertas do contador"
+  "observacoes_gerais": "alertas do contador",
+  "dados_faltantes": ["lista de dados essenciais ausentes — vazio se nada faltar"]
 }}"""
 
 
