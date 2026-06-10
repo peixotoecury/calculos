@@ -178,7 +178,9 @@ def calcular_lista(verbas: list[dict], data_base: str, metodo: str = "SELIC_ADC5
     for i, v in enumerate(verbas):
         val = _parse_valor_flex(v.get("valor_hist", 0))
         comp = str(v.get("competencia", "01/2020"))
-        resultado = calcular_verba(val, comp, data_base, metodo, ipca_e, selic)
+        # Permite sobrescrever o método por verba (ex: vincendas sem correção)
+        metodo_v = v.get("metodo_override") or metodo
+        resultado = calcular_verba(val, comp, data_base, metodo_v, ipca_e, selic)
         row = {**v, **resultado, "seq": i + 1}
         resultados.append(row)
     return resultados

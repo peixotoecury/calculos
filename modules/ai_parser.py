@@ -1,6 +1,6 @@
 """
-Parser inteligente de peças trabalhistas usando Claude API.
-Age como contador sênior — elabora o cálculo completo por verba.
+Extrator de peças trabalhistas usando Claude API.
+Quatro fluxos: inicial, cálculo liquidado, laudo pericial, sentença.
 """
 from __future__ import annotations
 import json
@@ -13,53 +13,88 @@ try:
 except ImportError:
     ANTHROPIC_OK = False
 
-PROMPT_SISTEMA = """Você é um contador sênior com 20 anos de experiência em perícias contábeis
-e liquidações de sentença trabalhista no Brasil. Você elabora cálculos completos como um
-expert judicial faria — não apenas extrai valores, mas CALCULA cada verba do zero quando
-necessário, aplica reflexos, deduções e classifica o risco processual.
+# ──────────────────────────────────────────────────────────────────────────────
+# SYSTEM PROMPT — regras que valem para todos os fluxos
+# ──────────────────────────────────────────────────────────────────────────────
+PROMPT_SISTEMA = """Você é um sistema especializado em extrair e calcular verbas trabalhistas
+de documentos jurídicos brasileiros. Seu papel é ler o documento fornecido e retornar
+os dados estruturados com precisão — sem inventar, sem omitir.
 
-Regras obrigatórias:
-1. Para INICIAL: leia os pedidos e estime os valores pleiteados. Classifique o risco de cada
-   verba como Possível (risco alto para o réu), Provável (mais que 50% de chance) ou Remoto.
-2. Para SENTENÇA (precisa da inicial): identifique exatamente o que foi DEFERIDO e INDEFERIDO.
-   Use os valores da sentença. Deferido = Provável. Indeferido = Remoto. Em recurso = Possível.
-3. Para LAUDO PERICIAL (precisa da inicial): use os valores apurados pelo perito.
-   Verbas do perito favoráveis ao reclamante = Provável.
-4. Calcule CM e juros APENAS com os campos fornecidos (competencia e data_base).
-   O motor de cálculo externo fará a matemática — você fornece os dados corretos.
-5. Para cada verba informe a competência (mês/ano de origem do débito).
-6. INSS e IR: valores NEGATIVOS (são deduções do reclamante).
-7. FGTS + multa 40%: obrigação do empregador, valor POSITIVO.
-8. Nunca invente valores. Se não encontrar, coloque 0.
-9. Em observacoes_gerais: aponte inconsistências, pedidos sem valor, alertas jurídicos.
-10. DADOS FALTANTES: se algum dado essencial não constar nos documentos, preencha o campo
-    "dados_faltantes" com lista de strings descrevendo o que falta. Exemplos:
-    - "Salário base não informado — necessário para calcular horas extras, divisor e reflexos"
-    - "Data de admissão não encontrada — necessária para calcular prescrição e períodos"
-    - "Holerites não anexados — necessários para apurar valores pagos e deduções"
-    Se nada faltar, retorne "dados_faltantes": [].
+REGRAS GERAIS:
+1. Extraia EXATAMENTE o que consta no documento. Não invente valores.
+2. Para cada verba informe: nome exato, competência (mês/ano de origem), valor histórico,
+   probabilidade de êxito (Provável/Possível/Remoto) e memória de cálculo.
+3. INSS e IR: valores NEGATIVOS (são deduções do reclamante).
+4. FGTS 8% + Multa 40%: positivos, são obrigações do empregador.
+5. Competência = mês em que o débito nasceu (não a data do documento):
+   - Saldo salário → mês da demissão
+   - 13º → dezembro (ou mês da demissão se proporcional)
+   - Férias → mês de início das férias ou da demissão
+   - Adicionais → último mês do período apurado
+   - Reflexos → mês do fato gerador (ex: férias sobre HE → mês das férias)
+6. Se nada faltar, retorne "dados_faltantes": [].
+7. Responda EXCLUSIVAMENTE com JSON válido, sem texto antes ou depois.
 
-Responda EXCLUSIVAMENTE com JSON válido, sem texto antes ou depois."""
+REGRAS DE CÁLCULO — ADICIONAIS:
+A) INSALUBRIDADE:
+   Base = SALÁRIO MÍNIMO FEDERAL do mês (nunca o salário do empregado).
+   Graus: mínimo 10%, médio 20%, máximo 40%.
+   SM de referência: 2018=R$954, 2019=R$998, 2020=R$1.045 (fev→R$1.045, jan/2020=R$1.039),
+   2021=R$1.100, 2022=R$1.212, 2023=R$1.320, jan/2024=R$1.412, jan/2025=R$1.518.
+   valor_hist = Σ (SM_mês × grau%) para cada mês do período.
+   Reflexos: listar como verbas SEPARADAS (13º sobre insalubridade, férias+1/3 sobre insalubridade).
 
-PROMPT_INICIAL = """Analise esta PETIÇÃO INICIAL trabalhista e elabore a tabela completa de verbas pleiteadas.
+B) PERICULOSIDADE:
+   Base = SALÁRIO BASE do empregado (nunca o salário mínimo). Percentual fixo: 30%.
+   valor_hist = Σ (salário_mês × 0,30) para cada mês do período.
+   Reflexos: listar como verbas SEPARADAS.
+
+C) HORAS EXTRAS:
+   Divisor: 220h (44h/sem), 180h (30h/sem) ou conforme especificado.
+   Valor-hora = salário ÷ divisor. Adicional: 50% normais, 100% domingos/feriados.
+   Calcule o total de horas do período × valor-hora com adicional.
+
+D) PENSÃO MENSAL ART. 950 CC:
+   NÃO inclua na lista "verbas" — preencha o campo "pensao_950" separado.
+   O motor Python calculará automaticamente vencidas e vincendas.
+   Exceção: se a sentença fixou valor exato (ex: "R$ 35.000") sem remeter à liquidação,
+   coloque em "verbas" com esse valor fixo E pensao_950.ativo = false."""
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Bloco JSON de pensao_950 — reutilizado em todos os prompts
+# ──────────────────────────────────────────────────────────────────────────────
+_PENSAO_950_JSON = """,
+  "pensao_950": {{
+    "ativo": true_ou_false,
+    "salario_base": número_ou_null,
+    "percentual_incapacidade": número_ou_null,
+    "data_inicio": "MM/YYYY ou null",
+    "data_nascimento": "MM/YYYY ou null",
+    "expectativa_vida_anos": número_ou_null,
+    "redutor": número_ou_0,
+    "forma_pagamento": "parcela_unica ou mensal",
+    "base_inclui_13": true_ou_false,
+    "base_inclui_ferias": true_ou_false,
+    "base_inclui_fgts": true_ou_false
+  }}"""
+
+# ──────────────────────────────────────────────────────────────────────────────
+# FLUXO 1 — PETIÇÃO INICIAL
+# ──────────────────────────────────────────────────────────────────────────────
+PROMPT_INICIAL = """Analise esta PETIÇÃO INICIAL trabalhista e estime as verbas pleiteadas.
 
 TEXTO DA PEÇA:
 {texto}
 
 DATA-BASE DO CÁLCULO: {data_base}
 
-REGRAS CRÍTICAS PARA INICIAL:
-1. TODAS as verbas devem ter prob = "Possível" — fase inicial, sem decisão (CPC 25)
-2. Extraia CADA verba individualmente com seu valor pleiteado
-3. Se a petição tem valor explícito por verba → use esse valor
-4. Se a petição tem VALOR DA CAUSA mas NÃO discrimina por verba:
-   - Use o valor da causa como valor_hist da primeira verba (ou distribua entre as verbas)
-   - NÃO deixe todas as verbas com R$ 0 — o total deve se aproximar do valor da causa
-5. Se há cálculo implícito na petição (ex: "55 horas × R$ 13,18 × 111 dias"), CALCULE e use o resultado
-6. Para verbas sem valor algum mas com dados suficientes (salário, período, jornada), estime
-7. O TOTAL de valor_hist de todas as verbas DEVE ser próximo ao valor da causa declarado
-8. Se não conseguir estimar uma verba, coloque valor_hist = 0 e explique em obs
-9. Competência = mês de encerramento do período de apuração da verba
+REGRAS:
+1. Todas as verbas = "Possível" (sem decisão judicial ainda — CPC 25).
+2. Se a petição tiver valor explícito por verba → use esse valor como valor_hist.
+3. Se tiver valor da causa mas sem discriminação por verba → distribua proporcionalmente
+   entre as verbas identificadas. Total deve aproximar o valor da causa.
+4. Se houver dados suficientes (salário, período, jornada), CALCULE a estimativa.
+5. Aplique as regras de cálculo de insalubridade, periculosidade e horas extras do sistema.
 
 Retorne APENAS este JSON:
 {{
@@ -73,26 +108,136 @@ Retorne APENAS este JSON:
   "valor_da_causa": número_ou_null,
   "verbas": [
     {{
-      "verba": "nome exato da verba conforme petição",
+      "verba": "nome exato da verba",
       "competencia": "MM/YYYY",
       "valor_hist": número,
       "prob": "Possível",
-      "memoria": "fórmula ou fonte do valor — ex: 2h extras × R$ 13,18 × 111 dias × fator 1,5",
+      "memoria": "fórmula ou fonte do valor",
       "obs": "observação relevante"
     }}
   ],
-  "observacoes_gerais": "total valor causa, verbas sem valor discriminado, alertas",
-  "dados_faltantes": ["lista de dados essenciais ausentes — vazio se nada faltar"]
-}}"""
+  "observacoes_gerais": "alertas e inconsistências",
+  "dados_faltantes": ["dados essenciais ausentes — vazio se nada faltar"]{pensao_950}
+}}""".format(pensao_950=_PENSAO_950_JSON, texto="{texto}", data_base="{data_base}")
 
-PROMPT_SENTENCA = """Analise esta SENTENÇA TRABALHISTA (e a inicial se fornecida) e elabore
-o cálculo de liquidação com todas as verbas deferidas e indeferidas.
+# ──────────────────────────────────────────────────────────────────────────────
+# FLUXO 2 — CÁLCULO LIQUIDADO (PJCalc ou outro)
+# ──────────────────────────────────────────────────────────────────────────────
+PROMPT_CALCULO = """Analise este CÁLCULO TRABALHISTA LIQUIDADO e extraia cada verba para reatualização.
+
+TEXTO DO CÁLCULO:
+{texto}
+
+DATA-BASE SOLICITADA: {data_base}
+
+REGRAS CRÍTICAS:
+1. Este é um cálculo já feito por perito/contador. EXTRAIA — não recalcule.
+2. Para cada verba: nome, competência (origem), valor_hist = valor BRUTO HISTÓRICO.
+   Se o PDF tiver coluna "Bruto Devido" ou "Histórico" → use esse valor.
+   Se só tiver o total corrigido → use-o como valor_hist (o sistema recorrigirá).
+3. Competência = mês de origem da verba (ver regras gerais do sistema).
+4. Se uma verba tem múltiplos períodos → some os históricos, use o mês MAIS RECENTE.
+5. Inclua TUDO: verbas principais, reflexos, FGTS, multa 40%, honorários.
+6. Todas as verbas de cálculo liquidado = prob "Provável".
+7. Em "observacoes_gerais": informe a data-base original do cálculo e o total original.
+8. Se identificar pensão art. 950 com parâmetros calculáveis, preencha pensao_950.
+
+Retorne APENAS este JSON:
+{{
+  "tipo_peca": "calculo",
+  "reclamante": "nome",
+  "reclamado": "nome da empresa",
+  "numero_processo": "número CNJ ou null",
+  "admissao": "MM/YYYY ou null",
+  "demissao": "MM/YYYY ou null",
+  "salario_base": número_ou_null,
+  "data_base_original": "MM/YYYY ou null",
+  "total_original": número_ou_null,
+  "verbas": [
+    {{
+      "verba": "nome exato da verba",
+      "competencia": "MM/YYYY",
+      "valor_hist": número,
+      "prob": "Provável",
+      "memoria": "extraído do cálculo — coluna bruto/histórico",
+      "obs": "observação se houver"
+    }}
+  ],
+  "observacoes_gerais": "data-base original, total original, diferenças notadas",
+  "dados_faltantes": []{pensao_950}
+}}""".format(pensao_950=_PENSAO_950_JSON, texto="{texto}", data_base="{data_base}")
+
+# ──────────────────────────────────────────────────────────────────────────────
+# FLUXO 3 — LAUDO PERICIAL (médico, técnico, ergonômico)
+# ──────────────────────────────────────────────────────────────────────────────
+PROMPT_LAUDO = """Analise este LAUDO PERICIAL TRABALHISTA e a inicial fornecida.
+Elabore o cálculo das verbas que o laudo CONFIRMA ou APURA.
+
+TIPO DE LAUDO: pode ser médico (incapacidade), técnico (insalubridade/periculosidade)
+ou ergonômico. Identifique o tipo e aplique as regras corretas.
+
+{texto_inicial_bloco}
+
+TEXTO DO LAUDO:
+{texto_laudo}
+
+DATA-BASE DO CÁLCULO: {data_base}
+DATA DE AJUIZAMENTO: {data_ajuizamento}
+
+REGRAS:
+1. Laudo FAVORÁVEL ao reclamante (confirma pedidos) → verbas = "Provável".
+2. Laudo DESFAVORÁVEL ao reclamante (nega pedidos) → verbas negadas = "Remoto".
+   Verbas não abordadas pelo laudo → mantém da inicial como "Possível".
+3. Para laudo MÉDICO: se confirmar incapacidade → preencher pensao_950 com os dados.
+   % de incapacidade, data da alta ou ajuizamento, nascimento do reclamante.
+4. Para laudo TÉCNICO de insalubridade: identificar grau (mínimo/médio/máximo = 10/20/40%),
+   período e calcular com salário mínimo mensal (ver regras do sistema).
+5. Para laudo TÉCNICO de periculosidade: confirmar 30% sobre salário, calcular período.
+6. Use os dados da INICIAL (salário, período, jornada) para calcular os valores.
+7. Verbas não calculáveis por falta de dados → valor_hist = 0 e explique em obs.
+
+Retorne APENAS este JSON:
+{{
+  "tipo_peca": "laudo",
+  "tipo_laudo": "medico|tecnico_insalubridade|tecnico_periculosidade|ergonomico|misto",
+  "reclamante": "nome",
+  "reclamado": "nome da empresa",
+  "numero_processo": "número CNJ ou null",
+  "admissao": "MM/YYYY ou null",
+  "demissao": "MM/YYYY ou null",
+  "salario_base": número_ou_null,
+  "conclusao_laudo": "resumo da conclusão pericial em 1-2 frases",
+  "verbas": [
+    {{
+      "verba": "nome da verba",
+      "competencia": "MM/YYYY",
+      "valor_hist": número,
+      "prob": "Provável|Possível|Remoto",
+      "deferido": true_ou_false_ou_null,
+      "memoria": "como calculado com base no laudo",
+      "obs": "observação"
+    }}
+  ],
+  "observacoes_gerais": "alertas e pontos de atenção",
+  "dados_faltantes": ["dados essenciais ausentes — vazio se nada faltar"]{pensao_950}
+}}""".format(
+    pensao_950=_PENSAO_950_JSON,
+    texto_inicial_bloco="{texto_inicial_bloco}",
+    texto_laudo="{texto_laudo}",
+    data_base="{data_base}",
+    data_ajuizamento="{data_ajuizamento}",
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# FLUXO 4 — SENTENÇA
+# ──────────────────────────────────────────────────────────────────────────────
+PROMPT_SENTENCA = """Analise esta SENTENÇA TRABALHISTA (e a inicial se fornecida).
+Elabore a liquidação com todas as verbas DEFERIDAS e INDEFERIDAS.
 
 REGRAS DE PROBABILIDADE (CPC 25):
-- DEFERIDO na sentença = "Provável" (condenação já existe, > 50% de perda)
-- INDEFERIDO na sentença = "Remoto" (< 25%, empresa tem decisão favorável)
-- Em recurso / parcialmente deferido = "Possível" (25-50%)
-- Se não há informação sobre o deferimento = "Possível"
+- DEFERIDO na sentença → "Provável"
+- INDEFERIDO na sentença → "Remoto"
+- Em recurso / parcialmente deferido → "Possível"
 
 {texto_inicial_bloco}
 
@@ -101,6 +246,14 @@ TEXTO DA SENTENÇA:
 
 DATA-BASE DO CÁLCULO: {data_base}
 DATA DE AJUIZAMENTO: {data_ajuizamento}
+
+REGRAS:
+1. Para cada verba deferida: calcule o valor histórico usando os dados do processo.
+2. Aplique as regras específicas de insalubridade, periculosidade e horas extras.
+3. Se a sentença mandar calcular em liquidação → estime com os dados disponíveis
+   e anote em "memoria" que é estimativa pendente de liquidação.
+4. Verbas indeferidas: inclua com valor_hist = 0 e prob = "Remoto" (controle de risco).
+5. Se houver pensão art. 950 deferida → preencher pensao_950 com os parâmetros da sentença.
 
 Retorne APENAS este JSON:
 {{
@@ -116,52 +269,26 @@ Retorne APENAS este JSON:
       "verba": "nome da verba",
       "competencia": "MM/YYYY",
       "valor_hist": número,
-      "prob": "Possível|Provável|Remoto",
+      "prob": "Provável|Possível|Remoto",
       "deferido": true_ou_false_ou_null,
       "memoria": "como foi calculado ou extraído",
       "obs": "observação se houver"
     }}
   ],
-  "observacoes_gerais": "alertas do contador",
-  "dados_faltantes": ["lista de dados essenciais ausentes — vazio se nada faltar"]
-}}"""
-
-PROMPT_LAUDO = """Analise este LAUDO PERICIAL TRABALHISTA (e a inicial se fornecida) e elabore
-o cálculo com todas as verbas apuradas pelo perito.
-
-{texto_inicial_bloco}
-
-TEXTO DO LAUDO:
-{texto_laudo}
-
-DATA-BASE DO CÁLCULO: {data_base}
-DATA DE AJUIZAMENTO: {data_ajuizamento}
-
-Retorne APENAS este JSON:
-{{
-  "tipo_peca": "laudo",
-  "reclamante": "nome",
-  "reclamado": "nome da empresa",
-  "numero_processo": "número CNJ ou null",
-  "admissao": "MM/YYYY ou null",
-  "demissao": "MM/YYYY ou null",
-  "salario_base": número_ou_null,
-  "verbas": [
-    {{
-      "verba": "nome da verba",
-      "competencia": "MM/YYYY",
-      "valor_hist": número,
-      "prob": "Possível|Provável|Remoto",
-      "deferido": true_ou_false_ou_null,
-      "memoria": "como foi calculado ou extraído",
-      "obs": "observação se houver"
-    }}
-  ],
-  "observacoes_gerais": "alertas do contador",
-  "dados_faltantes": ["lista de dados essenciais ausentes — vazio se nada faltar"]
-}}"""
+  "observacoes_gerais": "alertas",
+  "dados_faltantes": ["dados essenciais ausentes — vazio se nada faltar"]{pensao_950}
+}}""".format(
+    pensao_950=_PENSAO_950_JSON,
+    texto_inicial_bloco="{texto_inicial_bloco}",
+    texto_sentenca="{texto_sentenca}",
+    data_base="{data_base}",
+    data_ajuizamento="{data_ajuizamento}",
+)
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Função principal
+# ──────────────────────────────────────────────────────────────────────────────
 def extrair_com_ia(
     texto_principal: str,
     tipo_peca: str,
@@ -177,16 +304,22 @@ def extrair_com_ia(
     if not key:
         raise ValueError("ANTHROPIC_API_KEY não configurada.")
 
-    # Trunca textos longos
     def truncar(t, max_chars=60_000):
         return t[:max_chars] if len(t) > max_chars else t
 
     texto_inicial_bloco = ""
     if texto_inicial:
-        texto_inicial_bloco = f"TEXTO DA INICIAL (para contexto):\n{truncar(texto_inicial, 20_000)}\n"
+        texto_inicial_bloco = (
+            f"TEXTO DA INICIAL (para contexto):\n{truncar(texto_inicial, 20_000)}\n"
+        )
 
     if tipo_peca == "inicial":
         prompt = PROMPT_INICIAL.format(
+            texto=truncar(texto_principal),
+            data_base=data_base,
+        )
+    elif tipo_peca == "calculo":
+        prompt = PROMPT_CALCULO.format(
             texto=truncar(texto_principal),
             data_base=data_base,
         )
@@ -207,13 +340,14 @@ def extrair_com_ia(
 
     client = anthropic.Anthropic(api_key=key)
     response = client.messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-opus-4-8",
         max_tokens=8096,
+        thinking={"type": "adaptive"},
         system=PROMPT_SISTEMA,
         messages=[{"role": "user", "content": prompt}],
     )
 
-    raw = response.content[0].text.strip()
+    raw = response.content[-1].text.strip()
     return _parse_json(raw)
 
 
@@ -233,28 +367,24 @@ def resultado_para_verbas(resultado: dict, data_base: str) -> list[dict]:
     verbas = []
     for v in resultado.get("verbas", []):
         val = float(v.get("valor_hist", 0) or 0)
-        # Ignora verbas com valor zero — serão absorvidas em "Outros" se necessário
         if val == 0:
             continue
         verbas.append({
-            "verba": v.get("verba", ""),
+            "verba":      v.get("verba", ""),
             "competencia": v.get("competencia") or data_base,
             "valor_hist": val,
-            "prob": v.get("prob", "Possível"),
-            "deferido": v.get("deferido"),
-            "memoria": v.get("memoria", ""),
-            "obs": v.get("obs", ""),
+            "prob":       v.get("prob", "Possível"),
+            "deferido":   v.get("deferido"),
+            "memoria":    v.get("memoria", ""),
+            "obs":        v.get("obs", ""),
         })
 
-    # Se o tipo for inicial e há valor da causa declarado,
-    # verifica se o total das verbas identificadas é menor.
-    # A diferença entra como "Outros (a discriminar)".
+    # Para inicial: complementa com "Outros" se total < valor da causa
     valor_causa = float(resultado.get("valor_da_causa") or 0)
     tipo = resultado.get("tipo_peca", "")
     if tipo == "inicial" and valor_causa > 0:
         total_verbas = sum(v["valor_hist"] for v in verbas)
         diff = round(valor_causa - total_verbas, 2)
-        # Adiciona "Outros" se a diferença for > 1% do valor da causa
         if diff > valor_causa * 0.01:
             verbas.append({
                 "verba": "Outros (a discriminar)",
@@ -262,7 +392,10 @@ def resultado_para_verbas(resultado: dict, data_base: str) -> list[dict]:
                 "valor_hist": diff,
                 "prob": "Possível",
                 "deferido": None,
-                "memoria": f"Diferença entre valor da causa (R$ {valor_causa:,.2f}) e verbas identificadas",
+                "memoria": (
+                    f"Diferença entre valor da causa (R$ {valor_causa:,.2f}) "
+                    f"e verbas identificadas"
+                ),
                 "obs": "Verbas sem valor discriminado na petição — ajustar manualmente",
             })
 

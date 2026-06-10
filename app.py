@@ -15,6 +15,7 @@ from modules.excel_export      import gerar_excel
 from modules.pdf_report        import gerar_pdf
 from modules.ai_parser         import extrair_com_ia, resultado_para_verbas
 from modules.calculos_encargos import calcular_encargos_completo
+from modules.pensao_950        import calcular_pensao_950, IBGE_EXPECTATIVA
 
 # ─────────────────────────────────────────────
 # Página
@@ -201,6 +202,7 @@ def _init():
         "tipo_peca": "inicial", "resultado_ia": None,
         "verbas_calc": [], "calculado": False,
         "resultados": [], "totais": {}, "encargos": {}, "processo": {},
+        "pensao_950_calc": None,
     }.items():
         if k not in st.session_state:
             st.session_state[k] = v
@@ -346,36 +348,55 @@ tab_up, tab_res, tab_acordo, tab_help = st.tabs([
 # TAB 1 — UPLOAD & ANÁLISE
 # ══════════════════════════════════════════════
 with tab_up:
-    # Seletor de tipo
-    c1, c2, c3, _ = st.columns([1, 1, 1, 2])
+    # ── Seletor de tipo ──
     tipo = st.session_state["tipo_peca"]
-    with c1:
-        if st.button("📝 Inicial", use_container_width=True,
-                     type="primary" if tipo=="inicial" else "secondary"):
-            st.session_state["tipo_peca"] = "inicial"; st.rerun()
-    with c2:
-        if st.button("⚖️ Sentença", use_container_width=True,
-                     type="primary" if tipo=="sentenca" else "secondary"):
-            st.session_state["tipo_peca"] = "sentenca"; st.rerun()
-    with c3:
-        if st.button("📋 Laudo", use_container_width=True,
-                     type="primary" if tipo=="laudo" else "secondary"):
-            st.session_state["tipo_peca"] = "laudo"; st.rerun()
+    c1, c2, c3, c4 = st.columns(4)
+    _tipos = [
+        ("inicial",  "📝 Inicial",           c1),
+        ("calculo",  "📊 Atualizar Cálculo",  c2),
+        ("laudo",    "🔬 Laudo",              c3),
+        ("sentenca", "⚖️ Sentença",           c4),
+    ]
+    for _t, _lbl, _col in _tipos:
+        with _col:
+            if st.button(_lbl, use_container_width=True,
+                         type="primary" if tipo == _t else "secondary"):
+                st.session_state["tipo_peca"] = _t; st.rerun()
 
     tipo = st.session_state["tipo_peca"]
+
+    # Descrição do fluxo selecionado
+    _desc_fluxo = {
+        "inicial":  "Estime os pedidos da petição inicial e calcule o risco máximo (CPC 25).",
+        "calculo":  "Carregue um cálculo já liquidado (PJCalc/PDF) e atualize para nova data-base.",
+        "laudo":    "Carregue a inicial + laudo pericial (médico, técnico ou ergonômico) e calcule o que o laudo confirma.",
+        "sentenca": "Carregue a inicial + sentença e faça a liquidação com verbas deferidas e indeferidas.",
+    }
+    st.markdown(
+        f'<div class="info-box" style="margin-top:10px;">ℹ️ <b>{_desc_fluxo[tipo]}</b></div>',
+        unsafe_allow_html=True,
+    )
     st.markdown("---")
 
-    # Upload principal
-    labels = {"inicial":"📝 Petição Inicial (PDF ou TXT)",
-               "sentenca":"⚖️ Sentença (PDF ou TXT)",
-               "laudo":"📋 Laudo Pericial (PDF ou TXT)"}
-    # Ajuizamento aqui — fora da sidebar, visível
-    _aj_date = st.date_input("📅 Data de ajuizamento",
-                              value=datetime.date(2023, 1, 1),
-                              min_value=datetime.date(2000,1,1),
-                              max_value=datetime.date.today(),
-                              format="DD/MM/YYYY",
-                              help="Data em que a ação foi proposta")
+    # ── Upload principal ──
+    labels = {
+        "inicial":  "📝 Petição Inicial (PDF ou TXT)",
+        "calculo":  "📊 Cálculo Liquidado — ex: PJCalc (PDF ou TXT)",
+        "sentenca": "⚖️ Sentença (PDF ou TXT)",
+        "laudo":    "🔬 Laudo Pericial — médico, técnico ou ergonômico (PDF ou TXT)",
+    }
+
+    # Data de ajuizamento (só relevante para sentença/laudo)
+    _show_aj = tipo in ("sentenca", "laudo", "calculo")
+    _aj_date = st.date_input(
+        "📅 Data de ajuizamento",
+        value=datetime.date(2023, 1, 1),
+        min_value=datetime.date(2000, 1, 1),
+        max_value=datetime.date.today(),
+        format="DD/MM/YYYY",
+        help="Data em que a ação trabalhista foi proposta",
+        disabled=not _show_aj,
+    ) if _show_aj else None
     data_ajuizamento = _aj_date.strftime("%m/%Y") if _aj_date else ""
 
     col_a, col_b = st.columns([2, 1])
@@ -385,12 +406,16 @@ with tab_up:
         txt_colado = st.text_area("Ou cole o texto aqui", height=120, key="txt_p",
                                    placeholder="Cole o texto da peça...")
 
-    # Upload inicial (para sentença/laudo)
+    # ── Upload inicial (para sentença/laudo) ──
     arq_inicial = None
     txt_inicial = ""
-    if tipo in ("sentenca","laudo"):
+    if tipo in ("sentenca", "laudo"):
         st.markdown("---")
-        st.markdown("**📎 Petição Inicial** — necessária para análise completa")
+        _inicial_label = {
+            "sentenca": "**📎 Petição Inicial** — necessária para calcular as verbas da sentença",
+            "laudo":    "**📎 Petição Inicial** — necessária para cruzar com os achados do laudo",
+        }[tipo]
+        st.markdown(_inicial_label)
         col_c, col_d = st.columns([2, 1])
         with col_c:
             arq_inicial = st.file_uploader("Inicial (PDF ou TXT)", type=["pdf","txt"], key="up_i")
@@ -430,6 +455,75 @@ with tab_up:
                 )
                 verbas = resultado_para_verbas(resultado, data_base)
                 st.session_state["resultado_ia"] = resultado
+                st.session_state["pensao_950_calc"] = None  # limpa cálculo anterior
+
+                # ── Pensão art. 950 CC ──────────────────────────────────
+                pd950 = resultado.get("pensao_950") or {}
+                if pd950.get("ativo") and pd950.get("salario_base") and pd950.get("percentual_incapacidade"):
+                    try:
+                        p950 = calcular_pensao_950(
+                            salario_base=float(pd950["salario_base"]),
+                            percentual_incapacidade=float(pd950["percentual_incapacidade"]),
+                            data_inicio=pd950.get("data_inicio") or data_ajuizamento or data_base,
+                            data_nascimento=pd950.get("data_nascimento") or "",
+                            expectativa_vida_anos=pd950.get("expectativa_vida_anos"),
+                            ano_ibge=None,
+                            redutor=float(pd950.get("redutor") or 0),
+                            forma_pagamento=pd950.get("forma_pagamento") or "parcela_unica",
+                            data_base=data_base,
+                        )
+                        st.session_state["pensao_950_calc"] = p950
+
+                        # Remove verbas de pensão extraídas pela IA
+                        # (serão substituídas pelo cálculo preciso em 2 linhas)
+                        def _eh_pensao(nome: str) -> bool:
+                            n = nome.lower()
+                            return ("pensão" in n or "pensao" in n or "950" in n)
+                        verbas = [v for v in verbas if not _eh_pensao(v.get("verba", ""))]
+
+                        _prob950 = "Provável" if tipo == "sentenca" else "Possível"
+                        _comp950 = pd950.get("data_inicio") or data_ajuizamento or data_base
+                        _red = p950["redutor_pct"]
+                        _fator = round(1 - _red / 100, 6)
+
+                        # Parcelas VENCIDAS — têm CM e juros (débito já exigível)
+                        if p950["meses_vencidos"] > 0:
+                            val_vec = round(p950["total_vencido_bruto"] * _fator, 2)
+                            verbas.append({
+                                "verba": "Pensão Art. 950 CC — Vencidas",
+                                "competencia": _comp950,
+                                "valor_hist": val_vec,
+                                "prob": _prob950,
+                                "deferido": True if tipo == "sentenca" else None,
+                                "memoria": (
+                                    f"{p950['percentual_incapacidade']}% × R${p950['salario_base']:,.2f} "
+                                    f"= R${p950['pensao_mensal']:,.2f}/mês × {p950['meses_vencidos']} meses vencidos"
+                                    + (f" × (1−{_red}% red.) = R${val_vec:,.2f}" if _red else f" = R${val_vec:,.2f}")
+                                ),
+                                "obs": f"Parcelas já devidas de {p950['data_inicio']} até hoje",
+                            })
+
+                        # Parcelas VINCENDAS — SEM CM e SEM juros (ainda não venceram)
+                        if p950["meses_vincendos"] > 0:
+                            val_vinc = round(p950["total_vincendo_bruto"] * _fator, 2)
+                            verbas.append({
+                                "verba": "Pensão Art. 950 CC — Vincendas",
+                                "competencia": data_base,   # data atual → sem defasagem temporal
+                                "valor_hist": val_vinc,
+                                "prob": _prob950,
+                                "deferido": True if tipo == "sentenca" else None,
+                                "metodo_override": "SEM_CORRECAO",  # vincendas não têm CM nem juros
+                                "memoria": (
+                                    f"{p950['percentual_incapacidade']}% × R${p950['salario_base']:,.2f} "
+                                    f"= R${p950['pensao_mensal']:,.2f}/mês × {p950['meses_vincendos']} meses vincendos"
+                                    + (f" × (1−{_red}% red.) = R${val_vinc:,.2f}" if _red else f" = R${val_vinc:,.2f}")
+                                ),
+                                "obs": f"Prestações futuras até {p950['data_limite']} — sem CM/juros (vincendas)",
+                            })
+                    except Exception as e_p950:
+                        st.warning(f"⚠️ Não foi possível calcular pensão art. 950 automaticamente: {e_p950}. "
+                                   "Verifique os parâmetros na seção de Resultado.")
+
                 st.session_state["verbas_calc"] = verbas
 
                 def _meses(adm, dem):
@@ -459,14 +553,18 @@ with tab_up:
                     "encargos": encargos,
                     "calculado": True,
                     "processo": {
-                        "reclamante": resultado.get("reclamante",""),
-                        "reclamado":  resultado.get("reclamado",""),
-                        "numero_processo": resultado.get("numero_processo",""),
-                        "tipo_peca": tipo,
-                        "admissao":  resultado.get("admissao",""),
-                        "demissao":  resultado.get("demissao",""),
-                        "salario_base": resultado.get("salario_base",""),
-                        "valor_da_causa": resultado.get("valor_da_causa",""),
+                        "reclamante":        resultado.get("reclamante",""),
+                        "reclamado":         resultado.get("reclamado",""),
+                        "numero_processo":   resultado.get("numero_processo",""),
+                        "tipo_peca":         tipo,
+                        "admissao":          resultado.get("admissao",""),
+                        "demissao":          resultado.get("demissao",""),
+                        "salario_base":      resultado.get("salario_base",""),
+                        "valor_da_causa":    resultado.get("valor_da_causa",""),
+                        "data_base_original": resultado.get("data_base_original",""),
+                        "total_original":    resultado.get("total_original"),
+                        "conclusao_laudo":   resultado.get("conclusao_laudo",""),
+                        "tipo_laudo":        resultado.get("tipo_laudo",""),
                         "data_base": data_base, "metodo": metodo, "n_meses": n_meses,
                     },
                 })
@@ -550,14 +648,35 @@ with tab_res:
                 f'<div class="val" style="font-size:12px;">{v}</div></div>',
                 unsafe_allow_html=True)
 
-        # Info base
+        # Info base — mensagem por fluxo
         if tipo_r == "inicial":
             vdc = proc.get("valor_da_causa")
             msg_vdc = f" &nbsp;|&nbsp; 💼 <b>Valor da Causa:</b> {formatar_brl(float(vdc))}" if vdc else ""
             st.markdown(
                 f'<div class="warn-box">📌 <b>Petição Inicial — CPC 25:</b> '
-                f'Todas as verbas são <b>Possível</b> (sem decisão judicial ainda). '
-                f'O cálculo representa o risco máximo.{msg_vdc}</div>',
+                f'Todas as verbas são <b>Possível</b> (risco máximo — sem decisão).{msg_vdc}</div>',
+                unsafe_allow_html=True)
+        elif tipo_r == "calculo":
+            db_orig = proc.get("data_base_original", "—")
+            tot_orig = proc.get("total_original")
+            msg_orig = f" &nbsp;|&nbsp; Total original: <b>{formatar_brl(float(tot_orig))}</b>" if tot_orig else ""
+            st.markdown(
+                f'<div class="ok-box">📊 <b>Cálculo Atualizado:</b> '
+                f'Data-base original: <b>{db_orig}</b>{msg_orig} &nbsp;→&nbsp; '
+                f'Atualizado para: <b>{proc.get("data_base")}</b></div>',
+                unsafe_allow_html=True)
+        elif tipo_r == "laudo":
+            conclusao = proc.get("conclusao_laudo", "")
+            if conclusao:
+                st.markdown(
+                    f'<div class="info-box">🔬 <b>Conclusão do Laudo:</b> {conclusao}</div>',
+                    unsafe_allow_html=True)
+        elif tipo_r == "sentenca":
+            st.markdown(
+                '<div class="ok-box">⚖️ <b>Liquidação de Sentença:</b> '
+                'Verbas <span class="prob-v">Provável</span> = deferidas &nbsp;|&nbsp; '
+                '<span class="prob-r">Remoto</span> = indeferidas &nbsp;|&nbsp; '
+                '<span class="prob-p">Possível</span> = em recurso</div>',
                 unsafe_allow_html=True)
         st.markdown(
             f'<div class="info-box">📅 <b>Data-base:</b> {proc.get("data_base")} &nbsp;|&nbsp; '
@@ -701,14 +820,83 @@ with tab_res:
           </tr></thead>
           <tbody>{linhas}</tbody></table></div>""", unsafe_allow_html=True)
 
+        # ── Pensão art. 950 — detalhamento ──────────────────────────────
+        p950 = st.session_state.get("pensao_950_calc")
+        if p950:
+            st.markdown("---")
+            st.markdown("### Pensão por Incapacidade — Art. 950 CC")
+            st.markdown(f"""
+            <div style="background:#fff;border:1px solid rgba(0,59,92,.12);border-radius:10px;
+              padding:16px 20px;box-shadow:0 1px 4px rgba(0,59,92,.06);">
+              <div style="font-size:11px;font-weight:700;color:#003B5C;text-transform:uppercase;
+                letter-spacing:.5px;margin-bottom:12px;">📐 Memória de Cálculo Completa</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;">
+                <div style="background:#f0f9ff;border-radius:8px;padding:10px 12px;">
+                  <div style="font-size:9px;font-weight:700;color:#6B7F93;text-transform:uppercase;letter-spacing:.5px;">Salário Base</div>
+                  <div style="font-size:16px;font-weight:800;color:#003B5C;">{formatar_brl(p950['salario_base'])}</div>
+                </div>
+                <div style="background:#f0f9ff;border-radius:8px;padding:10px 12px;">
+                  <div style="font-size:9px;font-weight:700;color:#6B7F93;text-transform:uppercase;letter-spacing:.5px;">% Incapacidade</div>
+                  <div style="font-size:16px;font-weight:800;color:#003B5C;">{p950['percentual_incapacidade']}%</div>
+                </div>
+                <div style="background:#f0f9ff;border-radius:8px;padding:10px 12px;">
+                  <div style="font-size:9px;font-weight:700;color:#6B7F93;text-transform:uppercase;letter-spacing:.5px;">Pensão Mensal</div>
+                  <div style="font-size:16px;font-weight:800;color:#00A9E0;">{formatar_brl(p950['pensao_mensal'])}</div>
+                </div>
+                <div style="background:#f0f9ff;border-radius:8px;padding:10px 12px;">
+                  <div style="font-size:9px;font-weight:700;color:#6B7F93;text-transform:uppercase;letter-spacing:.5px;">Expectativa (IBGE)</div>
+                  <div style="font-size:16px;font-weight:800;color:#003B5C;">{p950['expectativa_vida_anos']} anos</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+                <div style="border:1px solid rgba(0,59,92,.1);border-radius:8px;padding:10px 12px;">
+                  <div style="font-size:9px;font-weight:700;color:#6B7F93;text-transform:uppercase;margin-bottom:6px;">Período da Pensão</div>
+                  <div style="font-size:12px;color:#17324D;">De: <b>{p950['data_inicio']}</b></div>
+                  <div style="font-size:12px;color:#17324D;">Até: <b>{p950['data_limite']}</b></div>
+                  <div style="font-size:11px;color:#6B7F93;margin-top:4px;"><b>{p950['meses_totais']}</b> meses totais</div>
+                </div>
+                <div style="border:1px solid rgba(0,169,224,.3);border-radius:8px;padding:10px 12px;background:#f0f9ff;">
+                  <div style="font-size:9px;font-weight:700;color:#6B7F93;text-transform:uppercase;margin-bottom:6px;">Parcelas Vencidas</div>
+                  <div style="font-size:11px;color:#17324D;"><b>{p950['meses_vencidos']}</b> meses já devidos</div>
+                  <div style="font-size:14px;font-weight:800;color:#003B5C;margin-top:4px;">{formatar_brl(p950['total_vencido_bruto'])}</div>
+                  <div style="font-size:10px;color:#6B7F93;">sem redutor</div>
+                </div>
+                <div style="border:1px solid rgba(0,169,224,.3);border-radius:8px;padding:10px 12px;background:#f0fdf4;">
+                  <div style="font-size:9px;font-weight:700;color:#6B7F93;text-transform:uppercase;margin-bottom:6px;">Parcelas Vincendas</div>
+                  <div style="font-size:11px;color:#17324D;"><b>{p950['meses_vincendos']}</b> meses futuros</div>
+                  <div style="font-size:14px;font-weight:800;color:#065f46;margin-top:4px;">{formatar_brl(p950['total_vincendo_bruto'])}</div>
+                  <div style="font-size:10px;color:#6B7F93;">sem redutor</div>
+                </div>
+              </div>
+              <div style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-size:10px;color:#6B7F93;">Total bruto (vencidas + vincendas sem redutor)</div>
+                  <div style="font-size:14px;font-weight:700;color:#003B5C;">{formatar_brl(p950['total_bruto'])}</div>
+                </div>
+                {"" if not p950['redutor_pct'] else f'''
+                <div style="font-size:13px;color:#6B7F93;font-weight:700;">× (1 − {p950['redutor_pct']}% redutor)</div>
+                '''}
+                <div style="text-align:right;">
+                  <div style="font-size:10px;color:#6B7F93;">{"Parcela Única (com redutor)" if p950['redutor_pct'] else "Total"}</div>
+                  <div style="font-size:18px;font-weight:900;color:#00A9E0;">{formatar_brl(p950['total_com_redutor'])}</div>
+                </div>
+              </div>
+              <div style="margin-top:10px;padding:8px 12px;background:#fff7ed;border-radius:6px;font-size:11px;color:#78350f;">
+                📌 <b>Art. 292 §2º CPC</b> — Valor estimado da causa (vencidas + 12 vincendas):
+                <b>{formatar_brl(p950['valor_causa_292'])}</b>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
         # ── Quadros financeiros completos ──
         if enc:
             st.markdown("---")
             titulo_q = {
-                "inicial": "📑 Cálculo Puro — Risco Máximo (se todos os pedidos forem deferidos)",
-                "sentenca":"📑 Liquidação de Sentença",
-                "laudo":   "📑 Cálculo com Base no Laudo Pericial",
-            }.get(tipo_r,"📑 Quadro Financeiro Completo")
+                "inicial":  "📑 Cálculo Puro — Risco Máximo (se todos os pedidos forem deferidos)",
+                "calculo":  "📑 Cálculo Atualizado — Valores Reatulizados para Nova Data-Base",
+                "sentenca": "📑 Liquidação de Sentença",
+                "laudo":    "📑 Cálculo com Base no Laudo Pericial",
+            }.get(tipo_r, "📑 Quadro Financeiro Completo")
             st.markdown(f"### {titulo_q}")
 
             col_q1, col_q2 = st.columns(2)
@@ -752,8 +940,8 @@ with tab_res:
         st.markdown("### Exportar")
         dc1, dc2 = st.columns(2)
         tipo_r2 = proc.get("tipo_peca","inicial")
-        r_ini = res if tipo_r2=="inicial" else []
-        r_lau = res if tipo_r2=="laudo"   else []
+        r_ini = res if tipo_r2 in ("inicial","calculo") else []
+        r_lau = res if tipo_r2 == "laudo" else []
         r_sen = res if tipo_r2 in ("sentenca","acordao") else []
         nome_arq = proc.get("reclamante","processo").replace(" ","_")
 
@@ -946,15 +1134,16 @@ with tab_acordo:
 # ══════════════════════════════════════════════
 with tab_help:
     st.markdown("""
-## Cálculos P&C — Guia Completo
+## LAWgico Cálculos — Guia Completo
 
-### Tipos de Peça
+### Quatro Fluxos de Trabalho
 
-| Peça | O que a IA faz |
-|------|---------------|
-| **Inicial** | Lê pedidos → extrai verbas com valores → tudo **Possível** |
-| **Sentença** | Lê inicial + sentença → deferido = **Provável** / indeferido = **Remoto** |
-| **Laudo** | Lê inicial + laudo → valores do perito → **Provável** quando favorável |
+| Fluxo | Documentos | O que o sistema faz |
+|-------|-----------|---------------------|
+| **📝 Inicial** | Petição inicial | Lê pedidos, estima valores, tudo **Possível** (CPC 25) |
+| **📊 Atualizar Cálculo** | PDF de cálculo liquidado (PJCalc) | Extrai verbas históricas e reatualiza para nova data-base |
+| **🔬 Laudo** | Inicial + laudo (médico/técnico/ergonômico) | Cruza pedidos com achados do laudo, calcula o que foi confirmado |
+| **⚖️ Sentença** | Inicial + sentença | Liquidação completa: deferido = **Provável**, indeferido = **Remoto** |
 
 ---
 
