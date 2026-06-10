@@ -347,7 +347,11 @@ def extrair_com_ia(
         messages=[{"role": "user", "content": prompt}],
     )
 
-    raw = response.content[-1].text.strip()
+    # Busca bloco de texto explicitamente (ignora blocos thinking)
+    text_blocks = [b for b in response.content if getattr(b, "type", "") == "text"]
+    if not text_blocks:
+        raise ValueError("Resposta da IA não contém bloco de texto.")
+    raw = text_blocks[-1].text.strip()
     return _parse_json(raw)
 
 
@@ -357,10 +361,14 @@ def _parse_json(raw: str) -> dict:
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
+        # Tenta extrair o maior objeto JSON do texto
         m = re.search(r"\{[\s\S]+\}", raw)
         if m:
-            return json.loads(m.group(0))
-        raise ValueError(f"JSON inválido:\n{raw[:500]}")
+            try:
+                return json.loads(m.group(0))
+            except json.JSONDecodeError:
+                pass
+        raise ValueError(f"Não foi possível interpretar resposta da IA. Trecho inicial: {raw[:200]}")
 
 
 def resultado_para_verbas(resultado: dict, data_base: str) -> list[dict]:
