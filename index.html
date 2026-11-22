@@ -261,7 +261,7 @@ async function iniciar() {
   $('#quem').innerHTML = `<b>${esc(u.nome)}</b><br>${esc(u.equipe)} · ${u.papel === 'admin' ? 'administração' : u.papel}`;
   $('#navEquipe').hidden = u.papel !== 'admin';
   const h = new Date().getHours(); $('#ola').textContent = `${h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}, ${chamar(u.nome)}`;
-  $('#olaSub').textContent = `Cálculos da equipe ${u.papel === 'admin' ? '(todas as equipes)' : u.equipe}: liquidação, impugnação, provisão e acordo, com revisão e histórico.`;
+  $('#olaSub').textContent = u.papel === 'admin' ? 'Todas as equipes · liquidação, impugnação, provisão e acordo' : `Equipe ${u.equipe} · liquidação, impugnação, provisão e acordo`;
   $('#bDemo').hidden = u.papel !== 'admin';
   souAdmin = u.papel === 'admin';
   const tipoUrl = new URLSearchParams(location.search).get('tipo');
@@ -278,7 +278,7 @@ async function carregar() {
 }
 function desenhar() {
   const conta = s => todos.filter(c => c.status === s).length;
-  const k = [['', 'Ativos', todos.length], ['em_revisao', 'Em revisão', conta('em_revisao')], ['devolvido', 'Devolvidos para ajuste', conta('devolvido')], ['revisado', 'Revisados', conta('revisado')]];
+  const k = [['', 'Ativos', todos.length], ['em_revisao', 'Em revisão', conta('em_revisao')], ['devolvido', 'Devolvidos', conta('devolvido')], ['revisado', 'Revisados', conta('revisado')]];
   const COR = { '': '#00AEEF', em_revisao: '#0284c7', devolvido: '#d97706', revisado: '#16a34a' };
   const IC = { '': '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/>', em_revisao: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
                devolvido: '<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/>', revisado: '<path d="M20 6L9 17l-5-5"/>' };
@@ -308,7 +308,6 @@ function desenhar() {
     $('#bPiloto').onclick = () => $('#bDemo').click();
     dp.ondragover = e => { e.preventDefault(); dp.classList.add('sobre'); };
     dp.ondragleave = () => dp.classList.remove('sobre');
-    dp.ondrop = e => { e.preventDefault(); dp.classList.remove('sobre'); carregarPiloto([...e.dataTransfer.files].filter(f => /\.json$/i.test(f.name))); };
   }
 }
 
@@ -335,6 +334,30 @@ async function desenharAtividade() {
 // como cada pessoa é chamada na saudação (nome do cadastro -> apelido de uso)
 const APELIDOS = [[/^ana carolina/i, 'Carol']];
 const chamar = nome => (APELIDOS.find(([re]) => re.test(nome || '')) || [0, (nome || '').split(' ')[0]])[1];
+
+
+// arquivos soltos na página: aceita arquivos .json ou a pasta inteira (percorre as subpastas)
+async function arquivosSoltos(dt) {
+  const out = [], entradas = [...dt.items].map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+  const le = ent => new Promise(ok => {
+    if (ent.isFile) return ent.file(f => { if (/\.json$/i.test(f.name)) out.push(f); ok(); }, () => ok());
+    const r = ent.createReader(), todos = [];
+    const lote = () => r.readEntries(async es => { if (!es.length) { for (const x of todos) await le(x); return ok(); } todos.push(...es); lote(); }, () => ok());
+    lote();
+  });
+  if (entradas.length) for (const e of entradas) await le(e);
+  else out.push(...[...dt.files].filter(f => /\.json$/i.test(f.name)));
+  return out;
+}
+document.addEventListener('dragover', e => { if ($('#dropPiloto')) { e.preventDefault(); $('#dropPiloto').classList.add('sobre'); } });
+document.addEventListener('dragleave', e => { if ($('#dropPiloto') && !e.relatedTarget) $('#dropPiloto').classList.remove('sobre'); });
+document.addEventListener('drop', async e => {
+  if (!$('#dropPiloto')) return;
+  e.preventDefault(); $('#dropPiloto').classList.remove('sobre');
+  const fs = await arquivosSoltos(e.dataTransfer);
+  if (!fs.length) { $('#demoMsg').textContent = 'Não achei arquivos .json no que foi solto. Solte a pasta "casos" ou os arquivos de dentro dela.'; return; }
+  carregarPiloto(fs);
+});
 
 // ---------- criar acesso ----------
 let modoCriar = false;
@@ -423,7 +446,7 @@ function tipoDe(nome) {
 }
 $('#bDemo').onclick = () => carregarPiloto(null);
 async function carregarPiloto(soltos) {
-  const msg = t => { $('#demoMsg').textContent = t; };
+  const msg = t => { $('#demoMsg').textContent = t; const c = $('#dropPiloto'); if (c) { let el = c.querySelector('.andamento'); if (!el) { el = document.createElement('div'); el.className = 'andamento'; el.style.cssText = 'margin-top:12px;font-weight:700;color:#075985'; c.appendChild(el); } el.textContent = t; } };
   // no computador da Controladoria lê a pasta da bancada; no site publicado, a administração escolhe os arquivos
   let nomes = [], arquivos = {};
   if (soltos && soltos.length) for (const f of soltos) { arquivos[f.name] = f; nomes.push(f.name); }

@@ -36,6 +36,12 @@
     return m;
   }
 
+  // menu sem piscar: o item Equipe (só administração) aparece já no carregamento, pelo que esta pessoa
+  // era da última vez (guardado no navegador), e é confirmado quando o login responde
+  const CHAVE_ADMIN = 'pc-calc-admin';
+  const mostraEquipe = v => { const e = document.getElementById('navEquipe'); if (e) e.hidden = !v; };
+  document.addEventListener('DOMContentLoaded', () => { try { mostraEquipe(localStorage.getItem(CHAVE_ADMIN) === '1'); } catch (e) {} });
+
   let perfil = null;
   async function eu() {
     const { data } = await sb.auth.getUser();
@@ -43,6 +49,8 @@
     if (perfil && perfil.user_id === data.user.id) return perfil;
     const p = erro(await sb.from('calc_usuarios').select('*').eq('user_id', data.user.id).maybeSingle());
     perfil = p ? Object.assign({ email: data.user.email }, p) : { user_id: data.user.id, email: data.user.email, semCadastro: true };
+    try { localStorage.setItem(CHAVE_ADMIN, perfil.papel === 'admin' ? '1' : '0'); } catch (e) {}
+    mostraEquipe(perfil.papel === 'admin');
     return perfil;
   }
   async function entrar(email, senha) { erro(await sb.auth.signInWithPassword({ email, password: senha })); perfil = null; return eu(); }
