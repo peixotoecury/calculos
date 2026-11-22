@@ -259,7 +259,7 @@ async function iniciar() {
   }
   $('#quem').innerHTML = `<b>${esc(u.nome)}</b><br>${esc(u.equipe)} · ${u.papel === 'admin' ? 'administração' : u.papel}`;
   $('#navEquipe').hidden = u.papel !== 'admin';
-  const h = new Date().getHours(); $('#ola').textContent = `${h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}, ${u.nome.split(' ')[0]}`;
+  const h = new Date().getHours(); $('#ola').textContent = `${h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}, ${chamar(u.nome)}`;
   $('#olaSub').textContent = `Cálculos da equipe ${u.papel === 'admin' ? '(todas as equipes)' : u.equipe}: liquidação, impugnação, provisão e acordo, com revisão e histórico.`;
   $('#bDemo').hidden = u.papel !== 'admin';
   souAdmin = u.papel === 'admin';
@@ -327,6 +327,10 @@ async function desenharAtividade() {
     return `<div class="ev" style="--cor:${cor}"><span class="pt"></span><div><b>${esc((e.usuario_nome || '').split(' ')[0])}</b> ${esc(txt)} <b>${esc(c.cnj || '')}</b><small>${esc(c.cliente || '')} · ${dh(e.criado_em)}</small></div></div>`; }).join('')
     : '<div class="sub">Nada por aqui ainda.</div>';
 }
+
+// como cada pessoa é chamada na saudação (nome do cadastro -> apelido de uso)
+const APELIDOS = [[/^ana carolina/i, 'Carol']];
+const chamar = nome => (APELIDOS.find(([re]) => re.test(nome || '')) || [0, (nome || '').split(' ')[0]])[1];
 
 // ---------- criar acesso ----------
 let modoCriar = false;
