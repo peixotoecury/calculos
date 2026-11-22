@@ -4,8 +4,8 @@
  *    reclamante ou do perito): verbas (corrigido, juros, total), FGTS, líquido, bruto, contribuição social,
  *    honorários e total do reclamado. Cada linha de verba é conferida (corrigido + juros = total).
  * 2. comparar(caso, r, deles): nosso cálculo (motor) x o deles, verba a verba e nos totais.
- * 3. minutaDocx(...): minuta em Word (impugnação, art. 879, § 2º, da CLT, ou concordância), com os campos
- *    que dependem do processo marcados em amarelo para o advogado preencher.
+ * 3. minutaDocx(...): impugnação (art. 879, § 2º, da CLT), manifestação ou concordância em Word, no papel
+ *    timbrado e no texto do escritório, com vara, partes, valores e assinaturas preenchidos; o que falta sai em amarelo.
  */
 (function (global) {
   'use strict';
@@ -87,52 +87,106 @@
     return { linhas, totais, difLiquido, concorda: totais.every(x => !x.aMaior) && linhas.every(l => !l.aMaior) };
   }
 
-  // ---------- minuta em Word ----------
-  async function minutaDocx(o) {
-    const D = global.docx;
-    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, HeadingLevel, BorderStyle } = D;
-    const T = (t, x) => new TextRun(Object.assign({ text: t, font: 'Arial', size: 24 }, x || {}));
-    const CAMPO = t => T(t, { highlight: 'yellow' });
-    const P = (runs, x) => new Paragraph(Object.assign({ children: Array.isArray(runs) ? runs : [T(runs)], alignment: AlignmentType.JUSTIFIED, spacing: { after: 200, line: 360 } }, x || {}));
-    const cel = (t, neg, dir) => new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: dir ? AlignmentType.RIGHT : AlignmentType.LEFT, children: [T(t, { size: 20, bold: !!neg })] })] });
-    const tabela = (cab, linhas) => new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [
-      new TableRow({ tableHeader: true, children: cab.map((c, i) => cel(c, true, i > 0)) }),
-      ...linhas.map(l => new TableRow({ children: l.map((c, i) => cel(c, false, i > 0)) }))] });
-    const c = o.comparacao, parte = o.parte === 'perito' ? 'pelo Sr. Perito' : 'pelo Reclamante';
-    const divergentes = c.linhas.filter(l => l.aMaior);
-    const corpo = [
-      P([T('EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DA ', { bold: true }), CAMPO('[Nª] VARA DO TRABALHO DE [CIDADE]'), T('', { bold: true })], { alignment: AlignmentType.LEFT }),
-      P(''), P([T('Processo nº ' + (o.cnj || '')), T('', {})]),
-      P([T('Reclamante: '), T(o.reclamante || '', { bold: true })]), P([T('Reclamada: '), T(o.reclamado || '', { bold: true })]), P(''),
-      P([T((o.reclamado || 'A RECLAMADA').toUpperCase(), { bold: true }), T(', por seus advogados, nos autos da reclamação trabalhista em epígrafe, vem, respeitosamente, à presença de Vossa Excelência, '),
-        T(o.concordancia ? 'manifestar CONCORDÂNCIA com os cálculos de liquidação apresentados ' + parte : 'apresentar IMPUGNAÇÃO AOS CÁLCULOS DE LIQUIDAÇÃO apresentados ' + parte + ', com fundamento no art. 879, § 2º, da CLT', { bold: true }),
-        T(', pelas razões a seguir expostas.')]),
-    ];
-    if (o.concordancia) {
-      corpo.push(P(`Conferidos os cálculos, verbas, critérios de correção monetária e juros, contribuições previdenciárias, imposto de renda e FGTS, a Reclamada constatou que estão de acordo com o título executivo, apurando o valor líquido de ${brl(o.r.totais.liquido)} devido ao Reclamante, atualizado até ${o.dataLiquidacao}.`));
-      corpo.push(P('Diante do exposto, requer a homologação dos cálculos apresentados.'));
-    } else {
-      corpo.push(new Paragraph({ children: [T('I. DOS ITENS E VALORES IMPUGNADOS', { bold: true })], spacing: { before: 200, after: 200 } }));
-      corpo.push(P(`Nos termos do art. 879, § 2º, da CLT, a Reclamada indica a seguir, de forma fundamentada, os itens e valores objeto da discordância. Os valores correspondem ao total de cada verba (principal corrigido e juros), atualizados até ${o.dataLiquidacao}.`));
-      divergentes.forEach((l, i) => {
-        corpo.push(new Paragraph({ children: [T(`${i + 1}. ${l.nome}`, { bold: true })], spacing: { before: 160, after: 120 } }));
-        const base = l.soDeles ? `O cálculo apresentado inclui a verba "${l.nomeDeles}", no valor de ${brl(l.deles)}, que não integra a condenação.`
-          : l.nosso && !l.deles ? `O cálculo apresentado não apura a verba, devida no valor de ${brl(l.nosso)}.`
-          : `O cálculo apresentado apura ${brl(l.deles)}, enquanto o valor correto, nos termos da decisão, é de ${brl(l.nosso)}, com diferença de ${brl(Math.abs(l.dif))} ${l.dif > 0 ? 'a maior' : 'a menor'}.`;
-        corpo.push(P([T(base + ' '), CAMPO(o.fundamentos[l.nome] || '[Fundamento: indicar o critério da decisão (trecho e página) e o erro do cálculo impugnado.]')]));
+  // ---------- minuta em Word, no modelo do escritório ----------
+  // Base: papel timbrado do P&C (site/modelos/modelo_base_pc.docx, o mesmo da Plataforma de Dados), com os
+  // campos {{enderecamento}} {{processo}} {{qualificacao}} {{corpo}} {{data}} {{assinaturas}}.
+  // Texto no formato da "Impugnação aos cálculos" que o escritório protocola (ex.: 1001177-32.2018.5.02.0434).
+  const UF = { '01': 'RJ', '02': 'SP', '03': 'MG', '04': 'RS', '05': 'BA', '06': 'PE', '09': 'PR', '10': 'DF', '12': 'SC', '15': 'SP', '18': 'GO' };
+  function varaDoCnj(cnj) {
+    const m = String(cnj || '').match(/\.5\.(\d{2})\.(\d{4})$/);
+    return m ? { vara: (global.VARAS_PC || {})[`5.${m[1]}.${m[2]}`] || '', uf: UF[m[1]] || '' } : { vara: '', uf: '' };
+  }
+  const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  const extenso = d => { const m = String(d || '').match(/(\d{2})\/(\d{2})\/(\d{4})/); return m ? `${+m[1] === 1 ? '1º' : m[1]} de ${MESES[+m[2] - 1]} de ${m[3]}` : d; };
+  const PECAS = { impugnacao: 'Impugnação aos cálculos', manifestacao: 'Manifestação sobre os cálculos', concordancia: 'Concordância com os cálculos' };
+
+  // a peça é uma lista de blocos (p = parágrafo, h = título, tab = quadro); [entre colchetes] sai em amarelo
+  function blocos(o) {
+    const c = o.comparacao, t = o.r.totais, B = [], P = x => B.push({ t: 'p', txt: x }), H = x => B.push({ t: 'h', txt: x });
+    const quem = o.parte === 'perito' ? 'pelo Sr. Perito' : o.parte === 'contadoria' ? 'pela Contadoria' : 'pelo Reclamante';
+    const data = extenso(o.dataLiquidacao);
+    const quadro = () => c && B.push({ t: 'tab', cab: ['Item', 'Cálculo apresentado', 'Cálculo da Reclamada', 'Diferença'],
+      linhas: c.totais.map(x => [x.nome, brl(x.deles), brl(x.nosso), brl(x.dif)]) });
+    const conclusao = ini => { H('CONCLUSÃO'); P(`${ini} a Reclamada apresenta seus cálculos no importe líquido de ${brl(t.liquido)} devido ao Reclamante e total da execução em ${brl(t.totalReclamado)}, atualizados para ${data}, conforme planilha anexa, requerendo sua homologação.`); };
+    let acao;
+    if (o.peca === 'concordancia') {
+      acao = `manifestar CONCORDÂNCIA COM OS CÁLCULOS apresentados ${quem}, nos termos que seguem.`;
+      P(`Conferidos os cálculos apresentados ${quem}, verifica-se que observam os parâmetros fixados no título executivo quanto às verbas deferidas, aos períodos, à correção monetária e aos juros, às contribuições previdenciárias, ao imposto de renda e ao FGTS.`);
+      if (c && c.linhas.some(l => l.diverge && !l.aMaior)) P('Eventuais diferenças pontuais verificadas não prejudicam a Reclamada e não alteram a conclusão.');
+      quadro();
+      H('CONCLUSÃO');
+      P(`Diante do exposto, a Reclamada manifesta sua concordância com os cálculos apresentados, no importe líquido de ${brl(o.deles && o.deles.liquido != null ? o.deles.liquido : t.liquido)} devido ao Reclamante, requerendo sua homologação.`);
+    } else if (o.peca === 'impugnacao') {
+      acao = `apresentar IMPUGNAÇÃO AOS CÁLCULOS apresentados ${quem}, nos termos que seguem.`;
+      P(`Os cálculos apresentados ${quem} não refletem os parâmetros fixados no presente feito, apresentando diferenças relevantes em relação aos critérios determinados pelo Juízo.`);
+      P('Diante disso, a Reclamada apresenta impugnação fundamentada, com a indicação dos itens e valores objeto da discordância, nos termos do art. 879, § 2º, da CLT, apresentando os valores corretos, de acordo com os limites da condenação.');
+      c.linhas.filter(l => l.aMaior).forEach(l => {
+        H('DO ITEM ' + l.nome.toUpperCase());
+        P(l.soDeles ? `O cálculo apresentado inclui a verba "${l.nomeDeles}", no valor de ${brl(l.deles)}, que não integra a condenação.`
+          : `O cálculo apresentado apura ${brl(l.deles)} a este título, enquanto o valor correto, nos termos do título executivo, é de ${brl(l.nosso)}, com diferença de ${brl(Math.abs(l.dif))} a maior.`);
+        P((o.fundamentos || {})[l.nome] || '[Fundamento: indicar o critério da decisão (trecho e ID) e o erro do cálculo impugnado.]');
+        P(l.soDeles ? 'Desta forma, a verba deve ser excluída da apuração.' : 'Desta forma, o cálculo deve ser retificado.');
       });
-      corpo.push(new Paragraph({ children: [T('II. QUADRO COMPARATIVO', { bold: true })], spacing: { before: 240, after: 200 } }));
-      corpo.push(tabela(['Item', 'Cálculo impugnado', 'Cálculo da Reclamada', 'Diferença'], c.totais.map(x => [x.nome, brl(x.deles), brl(x.nosso), brl(x.dif)])));
-      corpo.push(P(''));
-      corpo.push(new Paragraph({ children: [T('III. DOS PEDIDOS', { bold: true })], spacing: { before: 240, after: 200 } }));
-      corpo.push(P(`Diante do exposto, requer o acolhimento da presente impugnação, com a retificação dos cálculos nos itens apontados e a homologação do cálculo da Reclamada, que apura o valor líquido de ${brl(o.r.totais.liquido)} devido ao Reclamante e o total de ${brl(o.r.totais.totalReclamado)} devido pela Reclamada, atualizados até ${o.dataLiquidacao}, conforme planilha anexa.`));
+      H('QUADRO COMPARATIVO'); quadro();
+      conclusao('Após tecidas as impugnações sobre os cálculos,');
+    } else {
+      acao = c ? `apresentar MANIFESTAÇÃO SOBRE OS CÁLCULOS apresentados ${quem}, bem como seus cálculos de liquidação, nos termos que seguem.`
+               : 'apresentar seus CÁLCULOS DE LIQUIDAÇÃO, nos termos que seguem.';
+      P('Em cumprimento ao r. despacho, a Reclamada apresenta seus cálculos de liquidação, elaborados nos estritos limites do título executivo, conforme planilha anexa.');
+      B.push({ t: 'tab', cab: ['Verba', 'Valor corrigido', 'Juros', 'Total'], linhas: o.r.verbas.filter(v => v.ativa && v.compoePrincipal && (v.corrigido || v.juros))
+        .map(v => [v.nome, brl(v.corrigido), brl(v.juros || 0), brl(r2(v.corrigido + (v.juros || 0)))]) });
+      P('Os critérios de correção monetária, juros, contribuições previdenciárias, imposto de renda e FGTS observam o título executivo, conforme demonstrativo anexo.');
+      if (c) {
+        H('DOS CÁLCULOS APRESENTADOS ' + quem.toUpperCase());
+        const div = c.linhas.filter(l => l.aMaior);
+        P(div.length ? `Confrontados os cálculos, verifica-se que o cálculo apresentado ${quem} apura valores superiores aos devidos nos seguintes itens: ${div.map(l => `${l.nome} (${brl(l.dif)} a maior)`).join('; ')}. [Indicar o critério da decisão que justifica cada diferença.]`
+          : 'Confrontados os cálculos, não se verificam valores apurados a maior em prejuízo da Reclamada.');
+        quadro();
+      }
+      conclusao('Diante do exposto,');
     }
-    corpo.push(P('Termos em que, pede deferimento.'), P([CAMPO('[Cidade]'), T(', '), CAMPO('[data]'), T('.')]), P(''),
-      P([CAMPO('[Nome do advogado]')], { alignment: AlignmentType.CENTER }), P([CAMPO('[OAB/SP nº]')], { alignment: AlignmentType.CENTER }));
-    const doc = new Document({ creator: 'Peixoto & Cury Advogados', title: (o.concordancia ? 'Concordância' : 'Impugnação') + ' aos cálculos ' + (o.cnj || ''),
-      sections: [{ properties: { page: { margin: { top: 1418, bottom: 1134, left: 1701, right: 1134 } } }, children: corpo }] });
-    return Packer.toBlob(doc);
+    return { acao, B };
   }
 
-  global.ImpugnacaoPC = { lerCalculoPjeCalc, comparar, minutaDocx, versao: '0.1.0' };
+  async function minutaDocx(o) {
+    const X = global.docx, V = 'Verdana';
+    o.peca = o.peca || (o.concordancia ? 'concordancia' : 'impugnacao');
+    const { acao, B } = blocos(o);
+    const runs = (t, x) => String(t).split(/(\[[^\]]+\])/).filter(Boolean).map(s => new X.TextRun({ text: s, font: V, size: (x && x.size) || 21, bold: x && x.bold, highlight: /^\[/.test(s) ? 'yellow' : undefined }));
+    const linha = { line: 340, lineRule: X.LineRuleType.EXACT };
+    const SEM = { style: X.BorderStyle.NONE, size: 0, color: 'FFFFFF' }, FINA = { style: X.BorderStyle.SINGLE, size: 4, color: '999999' };
+    const cel = (t, neg, dir, w) => new X.TableCell({ width: { size: w, type: X.WidthType.PERCENTAGE }, borders: { top: FINA, bottom: FINA, left: FINA, right: FINA },
+      margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new X.Paragraph({ alignment: dir ? X.AlignmentType.RIGHT : X.AlignmentType.LEFT, children: runs(t, { size: 17, bold: neg }) })] });
+    const tabela = b => { const w = [40, 20, 20, 20]; return new X.Table({ width: { size: 100, type: X.WidthType.PERCENTAGE }, rows: [
+      new X.TableRow({ tableHeader: true, children: b.cab.map((c, i) => cel(c, true, i > 0, w[i])) }),
+      ...b.linhas.map(l => new X.TableRow({ children: l.map((c, i) => cel(c, false, i > 0, w[i])) }))] }); };
+    const filhos = [];
+    for (const b of B) {
+      if (b.t === 'h') filhos.push(new X.Paragraph({ children: runs(b.txt, { bold: true }), spacing: { before: 240, after: 120, ...linha }, keepNext: true }));
+      else if (b.t === 'tab') { filhos.push(tabela(b)); filhos.push(new X.Paragraph({ children: [], spacing: { after: 120 } })); }
+      else filhos.push(new X.Paragraph({ children: runs(b.txt), alignment: X.AlignmentType.JUSTIFIED, indent: { firstLine: 2835 }, spacing: { after: 160, ...linha } }));
+    }
+    const auto = varaDoCnj(o.cnj);
+    const varaTxt = (o.vara || auto.vara || '[__ª Vara do Trabalho de CIDADE]').toUpperCase();
+    const ender = `EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DO TRABALHO DA ${varaTxt}, ${o.uf || auto.uf || '[UF]'}`;
+    const reclamada = (o.reclamado || '[NOME DA RECLAMADA]').toUpperCase(), parte = (o.reclamante || '[NOME DO(A) RECLAMANTE]').toUpperCase();
+    const assin = [['ANTONIO CARLOS AGUIAR', 'OAB/SP Nº 105.726'],
+      [o.advogado ? o.advogado.toUpperCase() : '[NOME DO ADVOGADO]', o.oab ? 'OAB/SP Nº ' + String(o.oab).replace(/^OAB\/?SP\s*(Nº)?\s*/i, '') : 'OAB/SP Nº [NÚMERO]']];
+    const hoje = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+    const base = new Uint8Array(await (await fetch(o.urlBase || 'modelos/modelo_base_pc.docx')).arrayBuffer());
+    const out = await X.patchDocument(base, { patches: {
+      enderecamento: { type: X.PatchType.PARAGRAPH, children: runs(ender, { bold: true }) },
+      processo: { type: X.PatchType.PARAGRAPH, children: runs(o.cnj || '[NÚMERO DO PROCESSO]') },
+      qualificacao: { type: X.PatchType.PARAGRAPH, children: [new X.TextRun({ text: '\t', font: V, size: 21 }), ...runs(reclamada, { bold: true }),
+        ...runs(', por seus advogados, já qualificada nos autos da Reclamação Trabalhista movida por '), ...runs(parte, { bold: true }), ...runs(', vem à presença de Vossa Excelência, ' + acao)] },
+      corpo: { type: X.PatchType.DOCUMENT, children: filhos },
+      data: { type: X.PatchType.PARAGRAPH, children: runs(hoje) },
+      assinaturas: { type: X.PatchType.DOCUMENT, children: [new X.Table({ width: { size: 100, type: X.WidthType.PERCENTAGE }, columnWidths: [4600, 4600], borders: X.TableBorders.NONE,
+        rows: [new X.TableRow({ children: assin.map(l => new X.TableCell({ width: { size: 50, type: X.WidthType.PERCENTAGE }, borders: { top: SEM, bottom: SEM, left: SEM, right: SEM },
+          children: l.map(t => new X.Paragraph({ alignment: X.AlignmentType.CENTER, spacing: { after: 0 }, children: runs(t, { bold: true }) })) })) })] })] },
+    } });
+    return new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  }
+
+  global.ImpugnacaoPC = { lerCalculoPjeCalc, comparar, minutaDocx, varaDoCnj, PECAS, versao: '0.2.0' };
 })(typeof window !== 'undefined' ? window : globalThis);

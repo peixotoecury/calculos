@@ -124,6 +124,9 @@ table.mini tr.x td{background:var(--badbg)}
   .tbl .esc{display:none}
   .scroll{overflow-x:auto}
 }
+  .pecaform{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px}
+  .pecaform label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted);font-weight:600}
+  .pecaform input,.pecaform select{font:inherit;font-size:13.5px;padding:7px 9px;border:1px solid var(--line,#d6dde6);border-radius:8px;min-width:150px;color:inherit;background:#fff}
 </style>
 <link rel="stylesheet" href="visual.css">
 </head>
@@ -166,6 +169,7 @@ table.mini tr.x td{background:var(--badbg)}
 <script src="saidas.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+<script src="varas.js"></script>
 <script src="impugnacao.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="central.js"></script>
@@ -390,10 +394,14 @@ table.mini tr.x td{background:var(--badbg)}
       ${selo}
       ${resumo}
       ${posicao}
-      <div class="card imp" id="cardImp" style="margin-top:16px"><h2>Impugnação ou concordância <small>compare com o cálculo do reclamante ou do perito e gere a minuta em Word</small></h2>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-          <label style="font-size:13px">Cálculo apresentado <select id="impParte"><option value="reclamante">pelo reclamante</option><option value="perito">pelo perito</option></select></label>
+      <div class="card imp" id="cardImp" style="margin-top:16px"><h2>Manifestação, impugnação ou concordância <small>no papel timbrado e no texto do escritório, com os dados do processo já preenchidos</small></h2>
+        <div class="pecaform">
+          <label>Cálculo apresentado <select id="impParte"><option value="reclamante">pelo reclamante</option><option value="perito">pelo perito</option><option value="contadoria">pela contadoria</option></select></label>
+          <label>Vara <input id="impVara" style="min-width:260px" placeholder="1ª Vara do Trabalho de Santo André"></label>
+          <label>Advogado(a) que assina junto <input id="impAdv" placeholder="Nome completo"></label>
+          <label>OAB/SP <input id="impOab" placeholder="000.000" style="max-width:110px"></label>
         </div>
+        <div class="saidas" style="margin:4px 0 12px"><button class="btn" type="button" id="impManif">Manifestação com os nossos cálculos</button><span>Sem o cálculo da outra parte: apresenta os cálculos da reclamada. Com o PDF da parte abaixo, dá para escolher impugnação, manifestação ou concordância.</span></div>
         <div class="dz" id="impDz"><b>Arraste aqui o PDF do cálculo da parte (PJe-Calc)</b><br><span style="font-size:13px">ou clique para escolher · a leitura é feita aqui no navegador, sem custo</span></div>
         <input type="file" id="impArq" accept=".pdf" hidden>
         <div id="impRes"></div>
@@ -536,15 +544,30 @@ table.mini tr.x td{background:var(--badbg)}
         </tbody></table></div>
         ${div.length ? `<h3 style="font-size:14px;margin:14px 0 6px">Fundamento de cada item impugnado <span class="tipo">opcional · vai para a minuta</span></h3>
           ${div.map((l, i) => `<div style="margin:6px 0"><b style="font-size:13px">${esc(l.nome)}</b><textarea data-fund="${i}" placeholder="Ex.: a sentença (p. 12) defere o adicional sobre o salário mínimo; o cálculo usou o salário base."></textarea></div>`).join('')}` : ''}
-        <div class="saidas"><button class="btn pri" type="button" id="impWord">Gerar minuta em Word</button><span>Os campos que dependem do processo (vara, cidade, data, advogado) saem em amarelo para preencher.</span></div>`;
+        <div class="saidas"><label style="font-size:13px">Peça <select id="impPeca">${Object.entries(ImpugnacaoPC.PECAS).map(([k, n]) => `<option value="${k}" ${k === (comp.concorda ? 'concordancia' : 'impugnacao') ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+          <button class="btn pri" type="button" id="impWord">Gerar em Word</button><span>Sai no papel timbrado, com vara, partes, valores e assinaturas. Só o que faltar fica em amarelo.</span></div>`;
       document.getElementById('impWord').onclick = async () => {
         const fund = {}; div.forEach((l, i) => { const t = document.querySelector(`[data-fund="${i}"]`); if (t && t.value.trim()) fund[l.nome] = t.value.trim(); });
-        const blob = await ImpugnacaoPC.minutaDocx({ comparacao: comp, r, parte: document.getElementById('impParte').value, concordancia: comp.concorda,
-          cnj: caso.processo.cnj, reclamante: caso.processo.reclamante, reclamado: caso.processo.reclamado, dataLiquidacao: dt(ct.liquidacao), fundamentos: fund });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `${comp.concorda ? 'Concordância' : 'Impugnação'} aos cálculos ${caso.processo.cnj || ''}.docx`; a.click();
+        await gerarPeca(document.getElementById('impPeca').value, fund, document.getElementById('impWord'));
       };
     }
+    // dados da peça: vara pelo código do CNJ; advogado e OAB lembrados neste navegador
+    const lembra = (id, chave) => { const el = document.getElementById(id); try { el.value = localStorage.getItem(chave) || ''; } catch (e) {} el.onchange = () => { try { localStorage.setItem(chave, el.value.trim()); } catch (e) {} }; return el; };
+    document.getElementById('impVara').value = ImpugnacaoPC.varaDoCnj(caso.processo.cnj).vara;
+    const impAdv = lembra('impAdv', 'pc-peca-adv'); lembra('impOab', 'pc-peca-oab');
+    if (!impAdv.value && window.CentralPC) CentralPC.eu().then(u => { if (u && u.nome && !impAdv.value) impAdv.value = u.nome; }).catch(() => {});
+    async function gerarPeca(peca, fund, btn) {
+      const txt = btn.textContent; btn.disabled = true; btn.textContent = 'Gerando…';
+      try {
+        const blob = await ImpugnacaoPC.minutaDocx({ peca, comparacao: comp, deles, r, parte: document.getElementById('impParte').value,
+          cnj: caso.processo.cnj, reclamante: caso.processo.reclamante, reclamado: caso.processo.reclamado, dataLiquidacao: dt(ct.liquidacao), fundamentos: fund || {},
+          vara: document.getElementById('impVara').value.trim(), advogado: impAdv.value.trim(), oab: document.getElementById('impOab').value.trim() });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `${ImpugnacaoPC.PECAS[peca]} ${caso.processo.cnj || ''}.docx`; a.click();
+      } catch (e) { alert('Não consegui gerar a peça: ' + e.message); }
+      finally { btn.disabled = false; btn.textContent = txt; }
+    }
+    document.getElementById('impManif').onclick = () => gerarPeca('manifestacao', {}, document.getElementById('impManif'));
     const dz = document.getElementById('impDz'), arqImp = document.getElementById('impArq');
     dz.onclick = () => arqImp.click();
     arqImp.onchange = e => e.target.files[0] && lerImp(e.target.files[0]);
