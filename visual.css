@@ -1,0 +1,16 @@
+/* Acabamento comum às telas internas da Central de Cálculos (central, novo cálculo, resultado):
+   logo do Peixoto & Cury na lateral, fundo com profundidade, cartões com sombra e botões vivos. */
+body{background:radial-gradient(1200px 600px at 100% -10%,rgba(0,174,239,.10),transparent 60%),#F2F5F8 !important}
+.side{background:radial-gradient(420px 320px at 0% 0%,rgba(0,174,239,.22),transparent 60%),linear-gradient(180deg,#001E36,#00294A) !important;
+  box-shadow:4px 0 24px rgba(0,20,40,.18)}
+.logo-pc{display:block;height:40px;margin:2px auto 18px;opacity:.96}
+.side .marca{padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.side .nav a,.side .nav button{position:relative;transition:background .15s,color .15s,transform .15s}
+.side .nav a:hover{transform:translateX(2px)}
+.card{box-shadow:0 1px 2px rgba(14,40,65,.04),0 8px 24px rgba(14,40,65,.06);border-color:#e3e9ef}
+.btn{transition:transform .12s,box-shadow .2s,filter .2s}
+.btn:hover{transform:translateY(-1px)}
+.btn.pri{background:linear-gradient(100deg,#0E2841,#00294A) !important;box-shadow:0 8px 20px rgba(14,40,65,.22)}
+.topo h1,.card h2{font-family:Sora,Figtree,sans-serif;letter-spacing:-.01em}
+.topo h1{font-weight:600}
+@media (max-width:900px){.logo-pc{height:28px;margin:0 12px 0 0;display:inline-block}.side .marca{border-bottom:0;padding-bottom:0}}

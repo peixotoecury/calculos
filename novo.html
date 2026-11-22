@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Novo cálculo · LAWgico Cálculos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Sora:wght@300;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="motor/montar.js"></script>
+<script src="motor/documentos.js"></script>
+<script src="motor/tabelas.js"></script>
+<script src="motor/motor.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="central.js"></script>
+<style>
+:root{--bg:#F2F5F8;--card:#fff;--ink:#0E2841;--muted:#5d6b7a;--line:#dfe5ec;--cyan:#00AEEF;--cyan2:#009DDC;--navy:#0E2841;
+  --ok:#1E7A3E;--okbg:#e6f4ea;--warn:#8a5a00;--warnbg:#fff4d6;--bad:#b42318;--badbg:#fde8e6}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Figtree,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+.side{background:linear-gradient(180deg,#001E36,#00294A);color:#cfe3f1;padding:22px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px}
+.marca{text-align:center;margin:4px 0 22px}.marca .wm{font-family:Sora,sans-serif;font-size:30px;color:#fff}.marca .wm b{font-weight:800}.marca .wm span{font-weight:300}
+.marca .tag{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--cyan)}.marca .sub{font-size:11px;color:#8fb2cc;margin-top:2px}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav a{text-decoration:none;padding:10px 12px;border-radius:10px;color:#cfe3f1;font-weight:500;display:flex;justify-content:space-between;align-items:center}
+.nav a:hover{background:rgba(255,255,255,.06)}.nav a.on{background:rgba(0,174,239,.16);color:#fff;box-shadow:inset 3px 0 0 var(--cyan)}
+.nav span.off{padding:10px 12px;color:#cfe3f1;opacity:.45;display:flex;justify-content:space-between}
+.em{font-size:10px;text-transform:uppercase;letter-spacing:1px;background:rgba(255,255,255,.1);padding:2px 6px;border-radius:6px}
+.side .rod{margin-top:auto;font-size:11px;color:#7e9db4;line-height:1.4}
+main{padding:26px 30px 60px;min-width:0;max-width:1180px}
+h1{font-size:22px;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 18px}
+.passos{display:flex;gap:8px;margin:0 0 18px;flex-wrap:wrap}
+.passo{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:600;color:var(--muted)}
+.passo b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#eef2f6;font-size:12px}
+.passo.on{color:var(--ink);border-color:var(--cyan)}.passo.on b{background:var(--cyan);color:#fff}.passo.feito b{background:var(--ok);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+.card h2{font-size:16px;margin:0 0 10px}
+.drop{border:2px dashed #b9c6d3;border-radius:14px;padding:30px;text-align:center;color:var(--muted);cursor:pointer;background:#fafcfd}
+.drop.sobre{border-color:var(--cyan);background:#eef9fe}
+.drop b{color:var(--ink)}
+.btn{font:inherit;font-weight:700;border:0;border-radius:10px;padding:10px 16px;cursor:pointer;background:var(--navy);color:#fff}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn[disabled]{opacity:.5;cursor:default}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);text-align:left;padding:8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid #eef2f6;vertical-align:top}
+select,input,textarea{font:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;color:var(--ink)}
+textarea{width:100%;min-height:54px}
+.chip{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.chip.ok{background:var(--okbg);color:var(--ok)}.chip.rev{background:var(--warnbg);color:var(--warn)}.chip.cinza{background:#eef2f6;color:var(--muted)}
+.verba{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.verba.rev{border-color:#f0d58a;background:#fffdf5}
+.verba .topo{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.verba h3{margin:0;font-size:15px}
+.grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:10px 0}
+.grade label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+.trecho{font-size:13px;color:#334;background:#f6f8fa;border-left:3px solid var(--cyan);padding:8px 10px;border-radius:6px}
+.aviso{background:var(--warnbg);color:#5c4100;border:1px solid #f0d58a;border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:12px}
+.info{background:#eef9fe;border:1px solid #bfe6f7;border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:12px}
+.linha{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.muted{color:var(--muted)}.n{text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:900px){.app{grid-template-columns:1fr}.side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:12px 16px}
+ .marca{margin:0 12px 0 0;text-align:left}.marca .wm{font-size:22px}.marca .tag,.marca .sub,.side .rod{display:none}.nav{flex-direction:row;flex-wrap:wrap}
+ main{padding:16px}.grade{grid-template-columns:1fr 1fr}.scroll{overflow-x:auto}}
+</style>
+<link rel="stylesheet" href="visual.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <img class="logo-pc" src="img/logo_pc_branca.png" alt="Peixoto &amp; Cury Advogados">
+    <div class="marca"><div class="tag">cálculos</div><div class="wm"><b>LAW</b><span>gico</span></div><div class="sub">lawyers at work</div></div>
+    <nav class="nav">
+      <a href="index.html">Cálculos da equipe</a>
+      <a class="on" href="novo.html">Novo cálculo</a>
+      <a href="resultado.html">Resultado do cálculo</a>
+    </nav>
+    <div class="rod">Plataforma de Cálculos Peixoto &amp; Cury<br>Piloto interno · Time B</div>
+  </aside>
+  <main>
+    <h1>Novo cálculo</h1>
+    <p class="lead">Anexe a íntegra do processo (ou as peças em PDF). A plataforma separa os documentos, lê as decisões e propõe os parâmetros; você confere e aprova cada um.</p>
+    <div class="passos"><div class="passo on" id="p1"><b>1</b>Peças</div><div class="passo" id="p2"><b>2</b>Leitura</div><div class="passo" id="p3"><b>3</b>Revisão</div><div class="passo" id="p4"><b>4</b>Contrato e cálculo</div></div>
+
+    <section class="card" id="secPecas">
+      <h2>1. Peças do processo</h2>
+      <div class="drop" id="drop"><b>Arraste aqui a íntegra do processo ou os PDFs das peças</b><br>ou clique para escolher · o arquivo é lido aqui no navegador e não sai desta máquina
+        <input type="file" id="arq" accept="application/pdf" multiple hidden></div>
+      <div id="progresso" class="muted" style="margin-top:10px"></div>
+      <div id="listaDocs"></div>
+    </section>
+
+    <section class="card" id="secLeitura" hidden>
+      <h2>2. Leitura das decisões</h2>
+      <div id="leituraInfo"></div>
+      <div class="linha"><button class="btn" id="btnLer">Ler as decisões</button><span id="leituraStatus" class="muted"></span></div>
+    </section>
+
+    <section id="secRevisao" hidden></section>
+
+    <section class="card" id="secContrato" hidden>
+      <h2>4. Dados do contrato e cálculo</h2>
+      <p class="muted" style="margin-top:0">Dados que vêm dos documentos (ficha de registro, holerites, cartões). A leitura automática deles é a próxima etapa; por enquanto, confira e preencha aqui.</p>
+      <div class="grade">
+        <label>Liquidação<input type="date" id="cLiq"></label>
+        <label>Carga horária mensal<input id="cCarga" value="220"></label>
+        <label>Município (código PJe-Calc)<input id="cMun" placeholder="ex.: 7057 Santo André"></label>
+        <label>Aviso prévio<select id="cProj"><option value="1">projetar (indenizado)</option><option value="0">não projetar</option></select></label>
+      </div>
+      <h3 style="font-size:14px;margin:14px 0 6px">Férias gozadas</h3>
+      <div id="tabFerias"></div><button class="btn sec" id="addFerias" type="button">Adicionar período</button>
+      <h3 style="font-size:14px;margin:14px 0 6px">Faltas e afastamentos</h3>
+      <div id="tabFaltas"></div><button class="btn sec" id="addFalta" type="button">Adicionar falta</button>
+      <h3 style="font-size:14px;margin:14px 0 6px">Salário base (holerites ou ficha financeira)</h3>
+      <p class="muted" style="margin-top:0;font-size:13px">Anexe os holerites em PDF e a plataforma preenche o salário mês a mês (e o adicional noturno pago), com a página de origem. Confira e corrija se precisar. Sem holerite, informe uma linha por faixa salarial.</p>
+      <div class="linha"><input type="file" id="holeritesArq" accept=".pdf" multiple><span id="holeritesStatus" class="muted"></span></div>
+      <div id="holeritesInfo"></div>
+      <div id="escaneadosBox" hidden style="margin:8px 0"><button class="btn sec" type="button" id="btnEscaneados"></button> <span id="escaneadosStatus" class="muted" style="font-size:13px"></span></div>
+      <div id="tabSal"></div><button class="btn sec" id="addSal" type="button">Adicionar faixa</button>
+      <h3 style="font-size:14px;margin:14px 0 6px">Cartão de ponto</h3>
+      <p class="muted" style="margin-top:0;font-size:13px">PDF com texto, planilha (Excel ou CSV) ou texto colado, uma linha por dia: a data e depois os horários de entrada e saída (ex.: <code>01/04/2022 05:00 09:00 10:00 13:17</code>). Também lê apurações em horas decimais (<code>05/11/13 ter 7,67 16,25 ...</code>): nesse caso usa só as duas primeiras colunas (entrada e saída). Linhas sem horário (folga, férias, atestado) são ignoradas.</p>
+      <div class="linha"><input type="file" id="cartaoArq" accept=".pdf,.xlsx,.xls,.csv,.txt"><button class="btn sec" type="button" id="btnColar">Colar texto</button></div>
+      <textarea id="cartaoTxt" hidden placeholder="Cole aqui as linhas do cartão" style="min-height:120px;margin-top:8px"></textarea>
+      <div class="linha" id="cartaoLerLinha" hidden><button class="btn sec" type="button" id="btnLerCartao">Ler texto colado</button></div>
+      <div id="cartaoInfo"></div>
+      <div id="jornadaBox" hidden>
+        <div class="grade">
+          <label>Jornada diária (horas)<input id="jDia" placeholder="ex.: 8"></label>
+          <label>Jornada semanal (horas)<input id="jSem" placeholder="ex.: 44"></label>
+          <label>Sábado (horas)<input id="jSab" placeholder="igual à diária"></label>
+          <label>Intervalo a descontar (horas)<input id="jInt" placeholder="só p/ dia com 1 entrada e 1 saída"></label>
+          <label>Domingos e feriados trabalhados<select id="jDom"><option value="0">contam como extra</option><option value="1">em separado (fora das extras)</option></select></label>
+          <label>Súmula 60, II (prorrogação noturna)<select id="jS60"><option value="0">não</option><option value="1">sim</option></select></label>
+        </div>
+        <p class="muted" id="jOrigem" style="font-size:13px;margin:0"></p>
+      </div>
+      <h3 style="font-size:14px;margin:14px 0 6px">Lançamentos manuais</h3>
+      <p class="muted" style="margin-top:0;font-size:13px">Valores tirados dos documentos ou informados por você: reflexos sobre verbas pagas, deduções de valores já recebidos (acordo, ação coletiva).</p>
+      <div id="tabLanc"></div><button class="btn sec" id="addLanc" type="button">Adicionar lançamento</button>
+      <div id="montagem" style="margin-top:14px"></div>
+      <div class="linha" style="margin-top:12px"><button class="btn" id="btnCalcular">Calcular</button><span id="calcStatus" class="muted"></span></div>
+      <div id="salvarBox" hidden style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
+        <h3 style="font-size:14px;margin:0 0 6px">Salvar na central</h3>
+        <p class="muted" style="margin-top:0;font-size:13px">Fica no histórico da equipe com data, responsável e versão, junto com as peças e documentos anexados.</p>
+        <div class="grade">
+          <label>Cliente<input id="sCliente" list="clientesLista" placeholder="ex.: Bridgestone"></label>
+          <label>Tipo de cálculo<select id="sTipo"></select></label>
+          <label>Reclamante<input id="sReclamante"></label>
+          <label>Reclamado<input id="sReclamado"></label>
+        </div>
+        <datalist id="clientesLista"><option>Bridgestone</option><option>CBC</option></datalist>
+        <label style="font-size:13px;display:flex;gap:6px;align-items:center;margin:6px 0"><input type="checkbox" id="sDocs" checked> Enviar os documentos anexados (<span id="sNDocs">0</span> arquivo(s))</label>
+        <textarea id="sObs" placeholder="Observação (opcional)"></textarea>
+        <div class="linha" style="margin-top:8px"><button class="btn" id="btnSalvar" type="button">Salvar na central</button><span id="salvarStatus" class="muted"></span></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dt = s => s ? s.split('-').reverse().join('/') : '';
+const brl = v => (v || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+
+// tipos de documento e como reconhecê-los pelo nome do arquivo e pelo começo do texto
+const TIPOS = [
+  ['Sentença', /senten[çc]a|^\W*s\s*e\s*n\s*t\s*e\s*n/i, true],
+  ['Acórdão', /ac[óo]rd[ãa]o|ementa/i, true],
+  ['Embargos de declaração', /embargos de declara/i, true],
+  ['Petição inicial', /peti[çc][ãa]o inicial|reclama[çc][ãa]o trabalhista|excelent[íi]ssim/i, false],
+  ['Contestação', /contesta[çc][ãa]o/i, false],
+  ['Holerites', /holerite|demonstrativo de pagamento|recibo de pagamento|contracheque|demonst/i, false],
+  ['Cartões de ponto', /cart[ãa]o de ponto|espelho de ponto|cart[ãa]o ponto|frequ[êe]ncia/i, false],
+  ['TRCT', /rescis[ãa]o do contrato|trct/i, false],
+  ['Ficha financeira', /ficha financeira/i, false],
+  ['Laudo pericial', /laudo/i, false],
+  ['Ata de audiência', /ata de audi|^ata/i, false],
+];
+const DECISOES = new Set(['Sentença', 'Acórdão', 'Embargos de declaração']);
+const estado = { docs: [], cnj: '', leitura: null, arquivos: [] };
+
+// pelo nome do arquivo: primeiro os anexos (o nome do anexo traz a peça a que pertence, ex.:
+// "Contestacao_anexo_holerite"), depois a peça; só então pelo começo do texto
+const POR_NOME = [
+  ['Holerites', /holerite|demonst|recibo.*pag|contracheque/i], ['Cartões de ponto', /cart[aã]o|ponto|espelho|frequ/i],
+  ['TRCT', /trct|rescis/i], ['Ficha financeira', /ficha.?financ|financeira/i],
+  ['Embargos de declaração', /embargos/i], ['Sentença', /senten[çc]a/i], ['Acórdão', /ac[óo]rd[ãa]o/i],
+  ['Petição inicial', /inicial/i], ['Contestação', /contesta[çc][ãa]o/i], ['Laudo pericial', /laudo|esclarecimento/i], ['Ata de audiência', /(^|_)ata(_|\b)/i],
+];
+function classifica(nome, texto) {
+  // anexo: vale o título do anexo, não a peça a que ele pertence
+  const anexo = nome.split(/_anexo_/i)[1];
+  if (anexo) { for (const [t, re] of POR_NOME.slice(0, 4).concat(POR_NOME.slice(-2))) if (re.test(anexo)) return t; return 'Documento anexo'; }
+  for (const [t, re] of POR_NOME) if (re.test(nome)) return t;
+  const ini = texto.slice(0, 1500);
+  for (const [t, re] of TIPOS) if (re.test(ini)) return t;
+  return 'Outro';
+}
+
+async function lerArquivos(files) {
+  estado.arquivos = estado.arquivos.concat(files.map(f => ({ arquivo: f, tipo: null })));
+  $('#progresso').textContent = 'Lendo os arquivos...';
+  const cnjs = {};
+  for (const f of files) {
+    const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise;
+    // a íntegra do PJe traz no rodapé "Num. 123456 - Pág. 1": cada Num é um documento
+    let atual = null;
+    for (let i = 1; i <= pdf.numPages; i++) {
+      if (i % 20 === 0) $('#progresso').textContent = `Lendo ${f.name}: página ${i} de ${pdf.numPages}`;
+      const pg = await pdf.getPage(i);
+      const txt = (await pg.getTextContent()).items.map(x => x.str).join(' ');
+      // número do processo: o que mais aparece nas páginas (a inicial cita outros processos)
+      for (const m of txt.matchAll(/\d{7}-\d{2}\.\d{4}\.5\.\d{2}\.\d{4}/g)) cnjs[m[0]] = (cnjs[m[0]] || 0) + 1;
+      const num = (txt.match(/Num\.\s*(\d{6,})\s*-\s*P[áa]g\.\s*(\d+)/) || [])[1];
+      const chave = num ? f.name + '#' + num : f.name;
+      if (!atual || atual.chave !== chave) {
+        atual = { chave, arquivo: f.name, num: num || null, paginas: [], tipo: null };
+        estado.docs.push(atual);
+      }
+      atual.paginas.push([i, txt]);
+      pg.cleanup();
+    }
+  }
+  estado.cnj = Object.entries(cnjs).sort((a, b) => b[1] - a[1]).map(x => x[0])[0] || '';
+  for (const d of estado.docs) if (!d.tipo) d.tipo = classifica(d.arquivo, d.paginas.map(p => p[1]).join(' '));
+  $('#progresso').textContent = `${estado.docs.length} documento(s) encontrados${estado.cnj ? ' · processo ' + estado.cnj : ''}.`;
+  mostraDocs();
+}
+
+function mostraDocs() {
+  const ops = ['Outro', 'Documento anexo', ...TIPOS.map(t => t[0])];
+  $('#listaDocs').innerHTML = `<div class="scroll"><table><thead><tr><th>Documento</th><th>Tipo</th><th class="n">Páginas</th></tr></thead><tbody>${
+    estado.docs.map((d, i) => `<tr><td>${esc(d.arquivo)}${d.num ? ` <span class="muted">· Num. ${d.num}</span>` : ''}<div class="muted" style="font-size:12px">${esc(d.paginas[0][1].slice(0, 110))}…</div></td>
+      <td><select data-i="${i}">${ops.map(o => `<option ${o === d.tipo ? 'selected' : ''}>${o}</option>`).join('')}</select></td>
+      <td class="n">${d.paginas.length}</td></tr>`).join('')}</tbody></table></div>`;
+  document.querySelectorAll('#listaDocs select').forEach(s => s.onchange = e => { estado.docs[+e.target.dataset.i].tipo = e.target.value; preparaLeitura(); });
+  preparaLeitura();
+}
+
+function preparaLeitura() {
+  const dec = estado.docs.filter(d => DECISOES.has(d.tipo));
+  const chars = dec.reduce((s, d) => s + d.paginas.reduce((a, p) => a + p[1].length, 0), 0);
+  const custo = chars / 3 / 1e6 * 4 + 0.12;     // entrada + saída aproximadas (Opus 5.5)
+  const calc = estado.docs.filter(d => /Holerites|Cartões|TRCT|Ficha/.test(d.tipo)).length;
+  $('#secLeitura').hidden = false;
+  $('#p1').className = 'passo feito'; $('#p2').className = 'passo on';
+  $('#leituraInfo').innerHTML = dec.length
+    ? `<div class="info">Serão lidas <b>${dec.length} decisão(ões)</b> (${dec.map(d => d.tipo).join(', ')}), cerca de ${Math.round(chars / 3 / 1000)} mil tokens. Custo estimado: <b>US$ ${custo.toFixed(2)}</b>. Só o texto das decisões sai do navegador, para o servidor local da plataforma. ${calc ? `Há ${calc} documento(s) para o cálculo (holerites, cartões, TRCT, fichas), usados na próxima etapa.` : ''}</div>`
+    : `<div class="aviso">Nenhuma sentença, acórdão ou embargos de declaração foi reconhecido. Ajuste o tipo dos documentos na lista acima.</div>`;
+  $('#btnLer').disabled = !dec.length;
+}
+
+$('#btnLer').onclick = async () => {
+  const dec = estado.docs.filter(d => DECISOES.has(d.tipo));
+  $('#btnLer').disabled = true; $('#leituraStatus').textContent = 'Lendo as decisões... (leva de 1 a 3 minutos)';
+  try {
+    const corpo = { cnj: estado.cnj, docs: dec.map(d => ({ nome: `${d.tipo} (${d.arquivo}${d.num ? ', Num. ' + d.num : ''})`, paginas: d.paginas })) };
+    const u = await CentralPC.eu().catch(() => null);
+    let j;
+    if (u && !u.semCadastro) j = await CentralPC.lerIA(Object.assign({ modo: 'decisoes' }, corpo));
+    else if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+      const r = await fetch('/api/ler', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+      j = await r.json(); if (!r.ok) throw new Error(j.erro || r.status);
+    } else throw new Error('entre na central (login) para usar a leitura com IA');
+    estado.leitura = j.leitura;
+    $('#leituraStatus').textContent = j.do_cache ? 'Leitura recuperada (já feita antes, sem custo).' : `Leitura concluída (${j.uso.entrada + j.uso.saida} tokens).`;
+    mostraRevisao();
+  } catch (e) {
+    $('#leituraStatus').textContent = 'Não foi possível ler: ' + e.message + '.';
+    $('#btnLer').disabled = false;
+  }
+};
+
+const NOME_TIPO = { insalubridade: 'Adicional de insalubridade', periculosidade: 'Adicional de periculosidade', horas_extras: 'Horas extras',
+  adicional_noturno: 'Adicional noturno', intervalo_intrajornada: 'Intervalo intrajornada', intervalo_especial: 'Intervalo especial',
+  domingos_feriados: 'Domingos e feriados', diferenca_salarial: 'Diferença salarial', equiparacao_salarial: 'Equiparação salarial',
+  reintegracao: 'Reintegração', estabilidade: 'Estabilidade', dano_moral: 'Dano moral', dano_material_pensao: 'Dano material / pensão',
+  plr: 'PLR', multa_477: 'Multa do art. 477', multa_467: 'Multa do art. 467', verbas_rescisorias: 'Verbas rescisórias', fgts: 'FGTS',
+  vale_transporte: 'Vale-transporte', tempo_a_disposicao: 'Tempo à disposição', outro: 'Outro' };
+
+function selo(c) {
+  if (!c) return '<span class="chip cinza">sem trecho</span>';
+  return c.conferido ? `<span class="chip ok">conferido · ${esc(c.peca || '')}${c.pagina ? ', p. ' + c.pagina : ''}</span>`
+                     : `<span class="chip rev">revisar · trecho achado ${c.cobertura || 0}% na peça</span>`;
+}
+
+function mostraRevisao() {
+  const L = estado.leitura, ct = L.contrato, at = L.atualizacao || {};
+  $('#p2').className = 'passo feito'; $('#p3').className = 'passo on';
+  const conf = L.conferencia_trechos || { conferidos: 0, total: 0 };
+  const verbas = L.verbas_deferidas.map((v, i) => {
+    const ok = v.conferencia && v.conferencia.conferido;
+    return `<div class="verba ${ok ? '' : 'rev'}">
+      <div class="topo"><h3>${esc(NOME_TIPO[v.tipo] || v.tipo)}</h3>${selo(v.conferencia)}</div>
+      <div class="muted" style="font-size:14px;margin-top:4px">${esc(v.descricao)}</div>
+      <div class="grade">
+        <label>Percentual<input data-v="${i}" data-c="percentual" value="${v.percentual || ''}"></label>
+        <label>Base de cálculo<input data-v="${i}" data-c="base_de_calculo" value="${esc(v.base_de_calculo)}"></label>
+        <label>Início<input type="date" data-v="${i}" data-c="periodo_inicio" value="${esc(v.periodo_inicio)}"></label>
+        <label>Fim<input type="date" data-v="${i}" data-c="periodo_fim" value="${esc(v.periodo_fim)}"></label>
+        <label>Quantidade<input data-v="${i}" data-c="quantidade" value="${esc(v.quantidade)}"></label>
+        <label>Valor arbitrado<input data-v="${i}" data-c="valor_fixo" value="${v.valor_fixo || ''}"></label>
+        <label style="grid-column:span 2">Reflexos<input data-v="${i}" data-c="reflexos" value="${esc((v.reflexos || []).join('; '))}"></label>
+      </div>
+      <div class="trecho">“${esc(v.trecho)}”</div>
+      <label class="linha" style="margin-top:8px"><input type="checkbox" data-aprova="${i}" ${ok ? 'checked' : ''}> Aprovo este parâmetro${ok ? '' : ' (o trecho não foi achado literalmente na peça: confira na decisão antes de aprovar)'}</label>
+    </div>`;
+  }).join('');
+  const perguntas = (L.pontos_de_atencao || []).map((p, i) => `<div style="margin-bottom:10px"><div>${esc(p)}</div><textarea data-p="${i}" placeholder="Sua decisão"></textarea></div>`).join('');
+  $('#secRevisao').hidden = false;
+  $('#secRevisao').innerHTML = `
+    <div class="card"><h2>3. Revisão dos parâmetros</h2>
+      <div class="${conf.conferidos === conf.total ? 'info' : 'aviso'}">${conf.conferidos} de ${conf.total} trechos citados foram encontrados literalmente nas decisões. ${conf.conferidos === conf.total ? '' : 'Os itens marcados "revisar" precisam ser conferidos na peça antes da aprovação.'} Nada entra no cálculo sem a sua aprovação.</div>
+      <div class="grade">
+        <label>Admissão<input type="date" data-ct="admissao" value="${esc(ct.admissao)}"></label>
+        <label>Demissão<input type="date" data-ct="demissao" value="${esc(ct.demissao)}"></label>
+        <label>Ajuizamento<input type="date" data-ct="ajuizamento" value="${esc(ct.ajuizamento)}"></label>
+        <label>Função<input data-ct="funcao" value="${esc(ct.funcao)}"></label>
+      </div></div>
+    <div class="card"><h2>Verbas deferidas</h2>${verbas || '<p class="muted">Nenhuma verba deferida encontrada.</p>'}
+      ${(L.verbas_indeferidas || []).length ? `<p class="muted" style="font-size:14px"><b>Indeferidas:</b> ${L.verbas_indeferidas.map(esc).join(' · ')}</p>` : ''}</div>
+    <div class="card"><h2>Correção e juros</h2>
+      <p><b>Correção:</b> ${esc(at.correcao)}<br><b>Juros:</b> ${esc(at.juros)}</p>
+      ${at.trecho ? `<div class="trecho">“${esc(at.trecho)}”</div><div style="margin-top:6px">${selo(at.conferencia)}</div>` : ''}</div>
+    <div class="card"><h2>Honorários, custas e justiça gratuita</h2>
+      <table><tbody>${(L.honorarios || []).map(h => `<tr><td>Honorários ${h.tipo === 'periciais' ? 'periciais' : 'advocatícios'} (${h.devedor})</td><td class="n">${h.percentual ? h.percentual + '%' : ''} ${h.valor ? brl(h.valor) : ''}</td><td class="muted">${esc(h.base)}</td></tr>`).join('')}
+        <tr><td>Custas</td><td class="n">${L.custas && L.custas.valor ? brl(L.custas.valor) : ''}</td><td class="muted">${esc(L.custas && L.custas.devedor)}</td></tr>
+        <tr><td>Justiça gratuita</td><td class="n">${{sim:'sim', nao:'não', nao_informado:'não informado'}[L.justica_gratuita] || ''}</td><td></td></tr></tbody></table></div>
+    ${perguntas ? `<div class="card"><h2>Perguntas para você decidir</h2><p class="muted" style="margin-top:0">Pontos que a decisão deixou em aberto ou que dependem de documentos.</p>${perguntas}</div>` : ''}
+    <div class="card linha"><button class="btn" id="btnAprovar">Aprovar e seguir para o cálculo</button><button class="btn sec" id="btnBaixar">Baixar os parâmetros (.json)</button><span id="aprovStatus" class="muted"></span></div>`;
+  document.querySelectorAll('[data-v]').forEach(el => el.oninput = e => {
+    const v = estado.leitura.verbas_deferidas[+e.target.dataset.v], c = e.target.dataset.c;
+    v[c] = c === 'reflexos' ? e.target.value.split(';').map(s => s.trim()).filter(Boolean) : (['percentual', 'valor_fixo'].includes(c) ? +e.target.value.replace(',', '.') || 0 : e.target.value);
+    v.editado = true;
+  });
+  document.querySelectorAll('[data-ct]').forEach(el => el.oninput = e => { estado.leitura.contrato[e.target.dataset.ct] = e.target.value; });
+  $('#btnBaixar').onclick = () => baixar();
+  $('#btnAprovar').onclick = () => {
+    const aprov = [...document.querySelectorAll('[data-aprova]')];
+    const pend = aprov.filter(c => !c.checked).length;
+    estado.leitura.verbas_deferidas.forEach((v, i) => { v.aprovado = aprov[i].checked; });
+    estado.leitura.decisoes = [...document.querySelectorAll('[data-p]')].map((t, i) => ({ pergunta: L.pontos_de_atencao[i], decisao: t.value }));
+    $('#aprovStatus').textContent = pend ? `${pend} parâmetro(s) ainda sem aprovação: eles ficam fora do cálculo.` : 'Todos os parâmetros aprovados.';
+    $('#p3').className = 'passo feito'; $('#p4').className = 'passo on';
+    $('#secContrato').hidden = false; desenhaContrato(); $('#secContrato').scrollIntoView({ behavior: 'smooth' });
+  };
+}
+
+function baixar() {
+  const blob = new Blob([JSON.stringify({ cnj: estado.cnj, leitura: estado.leitura, documentos: estado.docs.map(d => ({ arquivo: d.arquivo, num: d.num, tipo: d.tipo, paginas: d.paginas.length })) }, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `parametros_${estado.cnj || 'processo'}.json`; a.click();
+}
+
+// ---------- passo 4: dados do contrato, lançamentos e cálculo ----------
+const contrato = { ferias: [], faltas: [], lanc: [], sal: [], batidas: null, histLidos: {} };
+function linhas(lista, campos, alvo) {
+  $(alvo).innerHTML = lista.length ? `<table><tbody>${lista.map((x, i) => `<tr>${campos.map(([c, rot, tipo]) =>
+    `<td><label style="font-size:11px;color:var(--muted)">${rot}<br>${tipo === 'bool'
+      ? `<select data-l="${alvo}" data-i="${i}" data-c="${c}"><option value="1" ${x[c] ? 'selected' : ''}>sim</option><option value="0" ${x[c] ? '' : 'selected'}>não</option></select>`
+      : `<input ${tipo === 'date' || tipo === 'month' ? `type="${tipo}"` : ''} data-l="${alvo}" data-i="${i}" data-c="${c}" value="${esc(x[c] ?? '')}">`}</label></td>`).join('')}
+    <td><button class="btn sec" type="button" data-rm="${alvo}" data-i="${i}">remover</button></td></tr>`).join('')}</tbody></table>` : '<p class="muted" style="font-size:13px;margin:4px 0">Nenhum.</p>';
+  document.querySelectorAll(`[data-l="${alvo}"]`).forEach(el => el.oninput = el.onchange = e => {
+    const x = lista[+e.target.dataset.i], c = e.target.dataset.c;
+    x[c] = e.target.tagName === 'SELECT' ? e.target.value === '1' : (['dias', 'devido', 'pago', 'valor'].includes(c) ? +String(e.target.value).replace(',', '.') || 0 : e.target.value);
+  });
+  document.querySelectorAll(`[data-rm="${alvo}"]`).forEach(b => b.onclick = () => { lista.splice(+b.dataset.i, 1); desenhaContrato(); });
+}
+function desenhaContrato() {
+  linhas(contrato.ferias, [['relativa', 'Período aquisitivo (ex.: 2022/2023)'], ['ini', 'Início do gozo', 'date'], ['fim', 'Fim do gozo', 'date'], ['abono', 'Abono de 10 dias', 'bool']], '#tabFerias');
+  linhas(contrato.faltas, [['ini', 'Início', 'date'], ['fim', 'Fim', 'date'], ['justificada', 'Justificada', 'bool']], '#tabFaltas');
+  linhas(contrato.sal, [['de', 'De (mês)', 'month'], ['ate', 'Até (mês)', 'month'], ['valor', 'Salário base mensal (R$)']], '#tabSal');
+  linhas(contrato.lanc, [['nome', 'Descrição'], ['data', 'Data', 'date'], ['devido', 'Valor devido'], ['pago', 'Valor pago ou dedução'], ['salarial', 'Incide INSS/FGTS/IR', 'bool']], '#tabLanc');
+}
+$('#addFerias').onclick = () => { contrato.ferias.push({ relativa: '', ini: '', fim: '', abono: false }); desenhaContrato(); };
+$('#addFalta').onclick = () => { contrato.faltas.push({ ini: '', fim: '', justificada: true }); desenhaContrato(); };
+
+// ---------- holerites: texto do PDF (pdf.js) com as colunas preservadas, lido por regra ----------
+// cada linha é remontada pela posição x dos trechos, para que colunas (proventos x descontos) continuem alinhadas
+async function paginasDoPdf(arquivo) {
+  const pdf = await pdfjsLib.getDocument({ data: await arquivo.arrayBuffer() }).promise, out = [];
+  for (let n = 1; n <= pdf.numPages; n++) {
+    const itens = (await (await pdf.getPage(n)).getTextContent()).items.filter(it => it.str.length);
+    const larg = itens.filter(it => it.str.trim().length > 2).map(it => it.width / it.str.length).sort((a, b) => a - b);
+    const cw = larg.length ? larg[Math.floor(larg.length / 2)] : 5;
+    const porY = {};
+    for (const it of itens) { const y = Math.round(it.transform[5] / 2); (porY[y] || (porY[y] = [])).push(it); }
+    const linhas = Object.keys(porY).sort((a, b) => b - a).map(y => {
+      let l = '';
+      for (const it of porY[y].sort((a, b) => a.transform[4] - b.transform[4])) {
+        const col = Math.round(it.transform[4] / cw);
+        l += (l.length < col ? ' '.repeat(col - l.length) : (l && !l.endsWith(' ') ? ' ' : '')) + it.str;
+      }
+      return l;
+    });
+    out.push({ arquivo: arquivo.name, pagina: n, texto: linhas.join('\n') });
+  }
+  return out;
+}
+function faixas(valores) {
+  const ms = Object.keys(valores).sort(), out = [];
+  for (const m of ms) {
+    const ult = out[out.length - 1];
+    if (ult && ult.valor === valores[m] && proxMes(ult.ate) === m) ult.ate = m; else out.push({ de: m, ate: m, valor: valores[m] });
+  }
+  return out;
+}
+const proxMes = m => { const [a, b] = m.split('-').map(Number); return b === 12 ? `${a + 1}-01` : `${a}-${String(b + 1).padStart(2, '0')}`; };
+$('#holeritesArq').onchange = async e => {
+  const arqs = [...e.target.files]; if (!arqs.length) return;
+  estado.arquivos = estado.arquivos.concat(arqs.map(f => ({ arquivo: f, tipo: 'Holerites' })));
+  $('#holeritesStatus').textContent = 'Lendo os holerites…';
+  try {
+    let pags = [];
+    for (const a of arqs) pags = pags.concat(await paginasDoPdf(a));
+    const lido = DocumentosPC.lerHolerites(pags);
+    const hs = DocumentosPC.historicos(lido, [['noturno', 'ADICIONAL NOTURNO PAGO', /^\S{4} adic(ional)? noturno/i]]);
+    const ms = Object.keys(lido.meses).sort();
+    if (!ms.length) {
+      contrato.holeritesLidos = lido; contrato.pdfsHolerites = Object.assign(contrato.pdfsHolerites || {}, Object.fromEntries(arqs.map(a => [a.name, a])));
+      mostraEscaneados(lido);
+      $('#holeritesStatus').textContent = '';
+      $('#holeritesInfo').innerHTML = `<div class="aviso">Nenhum holerite reconhecido em ${pags.length} página(s). Os formatos lidos hoje são o Demonstrativo de Pagamento da Bridgestone e o Comprovante de Pagamento da CBC, em PDF com texto. PDF escaneado precisa da leitura com IA; por enquanto, informe as faixas salariais abaixo.</div>`;
+      return;
+    }
+    contrato.sal = faixas(hs.salario.valores); desenhaContrato();
+    contrato.histLidos = {}; if (hs.noturno) contrato.histLidos.noturno = hs.noturno;
+    const semTexto = lido.naoLidas.filter(p => (p.texto || '').trim().length < 100).length;
+    const outros = lido.naoLidas.length - semTexto;
+    const porArq = {}; for (const p of lido.naoLidas) porArq[p.arquivo] = (porArq[p.arquivo] || 0) + 1;
+    $('#holeritesStatus').textContent = '';
+    $('#holeritesInfo').innerHTML = `<div class="info"><b>${pags.length - lido.naoLidas.length} de ${pags.length} página(s) lidas</b>: salário de ${ms.length} mês(es), de ${dt(ms[0] + '-01').slice(3)} a ${dt(ms[ms.length - 1] + '-01').slice(3)}, em ${contrato.sal.length} faixa(s) (preenchidas abaixo).
+      ${hs.noturno ? `<div style="margin-top:4px">Adicional noturno pago encontrado em ${Object.values(hs.noturno.valores).filter(v => v).length} mês(es); entra na base das horas extras quando a decisão manda pela globalidade.</div>` : ''}
+      <div class="muted" style="font-size:12px;margin-top:6px">Salário contratual do mês (valor da hora × 220 ou salário mensal), como nos cálculos do contador, e não a rubrica paga no mês.</div>
+      ${lido.avisos.length ? `<ul style="margin:6px 0 0;padding-left:18px;font-size:13px">${lido.avisos.slice(0, 6).map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}
+      ${lido.naoLidas.length ? `<div style="margin-top:6px;font-size:13px">Não reconhecidas: ${lido.naoLidas.length} página(s)${semTexto ? `, ${semTexto} sem texto (escaneadas)` : ''}${outros ? `, ${outros} em outro formato` : ''}. ${Object.entries(porArq).slice(0, 4).map(([a, n]) => `${esc(a)} (${n})`).join(' · ')}</div>` : ''}</div>`;
+    contrato.holeritesLidos = lido;
+    contrato.pdfsHolerites = Object.assign(contrato.pdfsHolerites || {}, Object.fromEntries(arqs.map(a => [a.name, a])));
+    mostraEscaneados(lido);
+  } catch (err) { $('#holeritesStatus').textContent = ''; $('#holeritesInfo').innerHTML = `<div class="aviso">Não consegui ler: ${esc(err.message)}</div>`; }
+};
+
+
+// ---------- holerites e fichas escaneados: leitura com IA no servidor, página por página ----------
+const CUSTO_PAGINA = 0.05;   // US$ por página (medido na bancada: 0,04 holerite, até 0,22 ficha anual)
+function mostraEscaneados(lido) {
+  const sem = lido.naoLidas.filter(p => (p.texto || '').replace(/\s+/g, ' ').trim().length < 300);
+  contrato.escaneados = sem;
+  $('#escaneadosBox').hidden = !sem.length;
+  if (sem.length) $('#btnEscaneados').textContent = `Ler ${sem.length} página(s) escaneada(s) com IA (cerca de US$ ${(sem.length * CUSTO_PAGINA).toFixed(2)})`;
+}
+async function imagemDaPagina(arquivo, n) {
+  const pdf = await pdfjsLib.getDocument({ data: await arquivo.arrayBuffer() }).promise, pg = await pdf.getPage(n);
+  const v1 = pg.getViewport({ scale: 1 }), esc = Math.min(2, 1600 / Math.max(v1.width, v1.height)), v = pg.getViewport({ scale: esc });
+  const c = document.createElement('canvas'); c.width = v.width; c.height = v.height;
+  await pg.render({ canvasContext: c.getContext('2d'), viewport: v }).promise;
+  return c.toDataURL('image/jpeg', 0.85).split(',')[1];
+}
+// junta as páginas do mesmo holerite (rubricas numa página, totais na seguinte) e confere a soma no conjunto
+function juntarEscaneados(lidas) {
+  const grupos = [];
+  for (const { arquivo, pagina, lido } of lidas) for (const r of lido.referencias || []) {
+    const ult = grupos[grupos.length - 1];
+    const g = ult && ult.arquivo === arquivo && ult.mes === r.mes && ult.tipo === r.tipo_folha.toLowerCase() && pagina - ult.ult <= 1 ? ult
+      : (grupos.push({ arquivo, mes: r.mes, tipo: r.tipo_folha.toLowerCase(), paginas: [], ult: pagina, rubricas: [], tv: 0, td: 0, sal: 0, unid: '' }), grupos[grupos.length - 1]);
+    g.paginas.push(pagina); g.ult = pagina; g.rubricas.push(...r.rubricas);
+    g.tv = g.tv || r.total_vencimentos; g.td = g.td || r.total_descontos;
+    if (r.salario_contratual && !g.sal) { g.sal = r.salario_contratual; g.unid = r.salario_unidade; }
+  }
+  for (const g of grupos) {
+    const sv = Math.round(g.rubricas.reduce((s, x) => s + x.vencimento, 0) * 100) / 100;
+    g.ok = g.tv ? Math.abs(sv - g.tv) <= 0.02 : null; g.sv = sv;
+  }
+  return grupos;
+}
+$('#btnEscaneados').onclick = async () => {
+  const st = t => { $('#escaneadosStatus').innerHTML = t; };
+  const u = await CentralPC.eu().catch(() => null);
+  if (!u || u.semCadastro) { st('Entre na central para usar a leitura com IA: <a href="index.html" target="_blank">fazer login</a>.'); return; }
+  const pags = contrato.escaneados || [];
+  if (!confirm(`Ler ${pags.length} página(s) escaneada(s) com IA? Custo estimado: US$ ${(pags.length * CUSTO_PAGINA).toFixed(2)}. Página já lida antes não é cobrada de novo.`)) return;
+  $('#btnEscaneados').disabled = true;
+  const lidas = [], falhas = [];
+  for (const [i, pg] of pags.entries()) {
+    st(`Lendo ${i + 1} de ${pags.length} (${esc(pg.arquivo)}, p. ${pg.pagina})…`);
+    try {
+      const img = await imagemDaPagina(contrato.pdfsHolerites[pg.arquivo], pg.pagina);
+      const r = await CentralPC.lerIA({ modo: 'escaneado', cnj: estado.cnj, imagem: img, media_type: 'image/jpeg' });
+      lidas.push({ arquivo: pg.arquivo, pagina: pg.pagina, lido: r.pagina });
+    } catch (e) { falhas.push(`p. ${pg.pagina}: ${e.message}`); if (/limite diário/.test(e.message)) break; }
+  }
+  const grupos = juntarEscaneados(lidas);
+  // entra no mesmo formato dos holerites com texto: salário do mês (hora x 220 ou mensal) e rubricas pagas
+  const meses = (contrato.holeritesLidos || { meses: {} }).meses;
+  for (const g of grupos) {
+    const m = meses[g.mes] || (meses[g.mes] = { salario: null, salarioHora: null, rubricas: {}, origem: [] });
+    if (g.sal && /mensal|normal|folha/.test(g.tipo) && !m.salario) m.salario = g.unid === 'hora' ? Math.round(g.sal * 220 * 100) / 100 : g.sal;
+    m.origem.push(`${g.arquivo} p. ${g.paginas.join(',')} (escaneado, IA)`);
+    for (const x of g.rubricas) {
+      const nome = `${x.codigo} ${x.descricao}`.trim(), rb = m.rubricas[nome] || (m.rubricas[nome] = { qtd: 0, vencimento: 0, desconto: 0, paginas: [] });
+      rb.qtd += x.quantidade; rb.vencimento = Math.round((rb.vencimento + x.vencimento) * 100) / 100; rb.desconto = Math.round((rb.desconto + x.desconto) * 100) / 100;
+    }
+  }
+  const hs = DocumentosPC.historicos({ meses }, [['noturno', 'ADICIONAL NOTURNO PAGO', /^\S+ adic(ional)?\.? noturno(?!.*(dsr|reduz))/i]]);
+  if (hs.salario && Object.keys(hs.salario.valores).length) { contrato.sal = faixas(hs.salario.valores); desenhaContrato(); }
+  if (hs.noturno) contrato.histLidos = Object.assign(contrato.histLidos || {}, { noturno: hs.noturno });
+  const ok = grupos.filter(g => g.ok).length, rev = grupos.filter(g => g.ok === false);
+  st(`${lidas.length} página(s) lidas: ${grupos.length} holerite(s)/mês(es), ${ok} conferido(s) pela soma dos totais impressos.`
+    + (rev.length ? ` <b>Revisar</b>: ${rev.map(g => `${esc(g.mes)} (${esc(g.arquivo)} p. ${g.paginas.join(',')})`).join('; ')}.` : '')
+    + (falhas.length ? ` Falharam: ${esc(falhas.join('; '))}.` : '') + ' As faixas de salário abaixo foram atualizadas: confira.');
+  $('#btnEscaneados').disabled = false;
+};
+
+$('#addSal').onclick = () => { contrato.sal.push({ de: '', ate: '', valor: 0 }); desenhaContrato(); };
+
+// ---------- cartão de ponto: planilha ou texto colado, uma linha por dia ----------
+function hora(c) {
+  if (typeof c === 'number' && c >= 0 && c < 1) { const m = Math.round(c * 1440); return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`; }
+  const x = String(c ?? '').trim().match(/^(\d{1,2})[:h](\d{2})(?::\d{2})?\s*(am|pm)?$/i);
+  if (!x) return null;
+  let h = +x[1]; if (x[3]) { if (/pm/i.test(x[3]) && h < 12) h += 12; if (/am/i.test(x[3]) && h === 12) h = 0; }
+  return h < 24 && +x[2] < 60 ? `${String(h).padStart(2, '0')}:${x[2]}` : null;
+}
+function data(c) {
+  if (typeof c === 'number' && c > 20000 && c < 80000) return new Date(Date.UTC(1899, 11, 30) + Math.floor(c) * 864e5).toISOString().slice(0, 10);
+  const t = String(c ?? '').trim(); let x = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (x) { const a = x[3].length === 2 ? '20' + x[3] : x[3]; return `${a}-${x[2].padStart(2, '0')}-${x[1].padStart(2, '0')}`; }
+  x = t.match(/^(\d{4})-(\d{2})-(\d{2})/); return x ? x[0] : null;
+}
+// "7,67" = 7h40 (apuração em horas decimais, como nos cartões apurados pelo perito ou pela empresa)
+function horaDecimal(c) {
+  const x = String(c ?? '').trim().match(/^(\d{1,2})[,.](\d{2})$/); if (!x || +x[1] > 23) return null;
+  const m = Math.round(+('0.' + x[2]) * 60); return m < 60 ? `${x[1].padStart(2, '0')}:${String(m).padStart(2, '0')}` : null;
+}
+let decimais = 0;
+function lerCartao(linhasPlan) {
+  const bat = {}, avisos = []; let ign = 0; decimais = 0;
+  for (const cel of linhasPlan) {
+    const i = cel.findIndex(c => data(c)); if (i < 0) { ign++; continue; }
+    const d = data(cel[i]), resto = cel.slice(i + 1);
+    let hs = resto.map(hora).filter(Boolean);
+    // sem hh:mm: apuração em decimais; entrada e saída são as duas primeiras colunas numéricas, antes de qualquer traço
+    if (!hs.length && resto.some(c => horaDecimal(c))) {
+      const k = resto.findIndex(c => horaDecimal(c)), e = horaDecimal(resto[k]), sa = horaDecimal(resto[k + 1]);
+      if (e && sa) { hs = [e, sa]; decimais++; }
+    }
+    if (!hs.length) { ign++; continue; }
+    if (hs.length % 2) avisos.push(`${dt(d)}: número ímpar de marcações (${hs.join(' ')}); a última foi ignorada.`);
+    const pares = []; for (let k = 0; k + 1 < hs.length; k += 2) pares.push([hs[k], hs[k + 1]]);
+    if (!pares.length) continue;
+    if (bat[d]) avisos.push(`${dt(d)}: data repetida; ficaram as marcações da última linha.`);
+    bat[d] = pares;
+  }
+  const ds = Object.keys(bat).sort();
+  contrato.batidas = ds.length ? bat : null;
+  $('#cartaoInfo').innerHTML = ds.length
+    ? `<div class="info"><b>${ds.length} dia(s) com marcação</b>, de ${dt(ds[0])} a ${dt(ds[ds.length - 1])}. ${ign} linha(s) sem data ou sem horário ignoradas.
+       ${decimais ? `<div style="margin-top:6px">Cartão em horas decimais (${decimais} dia(s)): usei a 1ª e a 2ª coluna como entrada e saída. Se o intervalo não está nas marcações, informe abaixo quanto descontar.</div>` : ''}
+       <div class="muted" style="font-size:12px;margin-top:6px">Primeiros dias: ${ds.slice(0, 3).map(d => `${dt(d)} ${bat[d].map(p => p.join('-')).join(' ')}`).join(' · ')}</div>
+       ${avisos.length ? `<ul style="margin:6px 0 0;padding-left:18px;font-size:13px">${avisos.slice(0, 8).map(a => `<li>${esc(a)}</li>`).join('')}${avisos.length > 8 ? `<li>e mais ${avisos.length - 8}.</li>` : ''}</ul>` : ''}</div>`
+    : '<div class="aviso">Nenhum dia com data e horários encontrado. Confira o formato: data na primeira coluna e horários em seguida.</div>';
+  $('#jornadaBox').hidden = !ds.length;
+  if (ds.length && !$('#jDia').dataset.ok) {
+    const j = MontarPC.jornadaDaDecisao(estado.leitura);
+    $('#jDia').value = j.diaria || ''; $('#jSem').value = j.semanal || ''; $('#jS60').value = j.sumula60 ? '1' : '0'; $('#jDia').dataset.ok = 1;
+    $('#jOrigem').textContent = j.diaria || j.semanal ? `Sugerido pela decisão: "${(j.trecho || '').slice(0, 220)}${(j.trecho || '').length > 220 ? '…' : ''}". Confira.`
+      : 'A decisão não fixou a jornada das horas extras. Informe para apurar as extras (minutos por dia não precisam de jornada).';
+  }
+}
+$('#cartaoArq').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  estado.arquivos.push({ arquivo: f, tipo: 'Cartões de ponto' });
+  try {
+    if (/\.pdf$/i.test(f.name)) {
+      const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise, linhasPdf = [];
+      for (let n = 1; n <= pdf.numPages; n++) {
+        const itens = (await (await pdf.getPage(n)).getTextContent()).items.filter(it => it.str.trim());
+        const porY = {};
+        for (const it of itens) { const y = Math.round(it.transform[5] / 3); (porY[y] || (porY[y] = [])).push(it); }
+        Object.keys(porY).sort((a, b) => b - a).forEach(y => linhasPdf.push(porY[y].sort((a, b) => a.transform[4] - b.transform[4]).flatMap(it => it.str.trim().split(/\s+/))));
+      }
+      if (!linhasPdf.some(l => l.some(c => data(c)))) { $('#cartaoInfo').innerHTML = '<div class="aviso">O PDF não tem texto (é imagem escaneada). Por enquanto, use planilha ou texto.</div>'; return; }
+      lerCartao(linhasPdf); return;
+    }
+    if (/\.(csv|txt)$/i.test(f.name)) { lerCartao((await f.text()).split(/\r?\n/).map(l => l.split(/[;\t ]+|,(?=\s*\d)/))); return; }
+    const wb = XLSX.read(await f.arrayBuffer());
+    lerCartao(wb.SheetNames.flatMap(n => XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '' })));
+  } catch (err) { $('#cartaoInfo').innerHTML = `<div class="aviso">Não consegui ler o arquivo: ${esc(err.message)}</div>`; }
+};
+$('#btnColar').onclick = () => { $('#cartaoTxt').hidden = false; $('#cartaoLerLinha').hidden = false; $('#cartaoTxt').focus(); };
+$('#btnLerCartao').onclick = () => lerCartao($('#cartaoTxt').value.split(/\r?\n/).map(l => l.trim().split(/[;\t ]+|,(?=\s*\d)/)));
+
+$('#addLanc').onclick = () => { contrato.lanc.push({ nome: '', data: '', devido: 0, pago: 0, salarial: false }); desenhaContrato(); };
+
+const num = v => +String(v || '').replace(',', '.') || null;
+// faixas salariais da tela → histórico mês a mês (de admissão a demissão quando a faixa não tem datas)
+function histSal() {
+  const ct = estado.leitura.contrato || {}, valores = {};
+  for (const x of contrato.sal.filter(x => x.valor)) {
+    let m = x.de || (ct.admissao || '').slice(0, 7); const fim = x.ate || (ct.demissao || '').slice(0, 7);
+    for (let k = 0; m && m <= fim && k < 600; k++) {
+      valores[m] = x.valor; const [a, b] = m.split('-').map(Number); m = b === 12 ? `${a + 1}-01` : `${a}-${String(b + 1).padStart(2, '0')}`;
+    }
+  }
+  const out = Object.assign({}, contrato.histLidos || {});
+  if (Object.keys(valores).length) out.salario = { nome: 'SALÁRIO BASE', valores };
+  return out;
+}
+$('#btnCalcular').onclick = () => {
+  const L = estado.leitura, ct = L.contrato;
+  if (!$('#cLiq').value) { $('#calcStatus').textContent = 'Informe a data da liquidação.'; return; }
+  const ad = ct.admissao;
+  const ferias = contrato.ferias.filter(f => f.ini && f.fim).map(f => {
+    const ano = (f.relativa.match(/(\d{4})/) || [])[1];
+    const aqIni = ano && ad ? `${ano}${ad.slice(4)}` : null;
+    return { relativa: f.relativa, aquisitivoIni: aqIni, situacao: 'GOZADAS', prazo: 30, abono: !!f.abono, diasAbono: f.abono ? 10 : 0, dobra: false, gozos: [[f.ini, f.fim]] };
+  });
+  const dados = {
+    processo: { cnj: estado.cnj },
+    contrato: { liquidacao: $('#cLiq').value, cargaHoraria: +$('#cCarga').value || 220, municipio: $('#cMun').value.trim() || null, projetaAviso: $('#cProj').value === '1',
+                admissao: ct.admissao, demissao: ct.demissao, ajuizamento: ct.ajuizamento },
+    ferias, faltas: contrato.faltas.filter(f => f.ini && f.fim).map(f => ({ ini: f.ini, fim: f.fim, justificada: !!f.justificada })),
+    dataDecisao: (estado.docs.find(d => d.tipo === 'Sentença') || {}).arquivo?.match(/\d{4}-\d{2}-\d{2}/)?.[0] || null,
+    historicos: histSal(), historicoSalarioBase: contrato.sal.some(x => x.valor) ? 'salario' : null,
+    batidas: contrato.batidas,
+    jornada: contrato.batidas ? { diaria: num($('#jDia').value), semanal: num($('#jSem').value), sabado: $('#jSab').value.trim() ? num($('#jSab').value) : null,
+      sumula60: $('#jS60').value === '1', intervalo: num($('#jInt').value), domingoSeparado: $('#jDom').value === '1', trecho: '' } : null,
+    lancamentos: contrato.lanc.filter(l => l.nome && l.data && (l.devido || l.pago)).map(l => ({ nome: l.nome.toUpperCase(), origem: 'informado na tela',
+      incide: l.salarial ? { inss: true, irpf: true, fgts: true } : { inss: false, irpf: false, fgts: false },
+      ocorrencias: [{ ini: l.data, fim: l.data, devido: l.devido, pago: l.pago }] })),
+  };
+  const m = MontarPC.montar(L, dados);
+  $('#montagem').innerHTML = `${m.pendencias.length ? `<div class="aviso"><b>Pendências</b><ul style="margin:6px 0 0;padding-left:18px">${m.pendencias.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>` : ''}
+    <div class="info"><b>Premissas do cálculo</b><ul style="margin:6px 0 0;padding-left:18px">${m.premissas.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>`;
+  if (!m.caso.parametros.verbas.length) { $('#calcStatus').textContent = 'Nenhuma verba montada: veja as pendências.'; return; }
+  m.caso.arquivo = `Cálculo ${estado.cnj}`;
+  m.caso.processo = Object.assign({ reclamante: '', reclamado: '' }, m.caso.processo);
+  try { localStorage.setItem('casoMontado', JSON.stringify(m.caso)); } catch (e) {}
+  $('#calcStatus').innerHTML = `Cálculo montado. <a href="resultado.html?origem=montado" target="_blank">Abrir o resultado</a>`;
+  estado.montado = { m, dados };
+  $('#salvarBox').hidden = false; $('#sNDocs').textContent = estado.arquivos.length;
+  if (!$('#sTipo').options.length) for (const [k, v] of Object.entries(CentralPC.TIPOS)) $('#sTipo').insertAdjacentHTML('beforeend', `<option value="${k}" ${k === 'liquidacao' ? 'selected' : ''}>${v}</option>`);
+};
+
+// ---------- salvar na central (Supabase, com login) ----------
+$('#btnSalvar').onclick = async () => {
+  const st = t => { $('#salvarStatus').innerHTML = t; };
+  const u = await CentralPC.eu().catch(() => null);
+  if (!u) { st('Entre na central primeiro: <a href="index.html" target="_blank">abrir o login</a>, depois clique em salvar de novo.'); return; }
+  if (u.semCadastro) { st('Seu login ainda não está cadastrado em uma equipe da central.'); return; }
+  if (!$('#sCliente').value.trim()) { st('Informe o cliente.'); return; }
+  if (!estado.cnj) { st('Não achei o número do processo nas peças.'); return; }
+  const { m, dados } = estado.montado;
+  m.caso.processo = Object.assign(m.caso.processo || {}, { cnj: estado.cnj, reclamante: $('#sReclamante').value.trim(), reclamado: $('#sReclamado').value.trim() });
+  let totais = null;
+  try { totais = MotorPC.calcular(JSON.parse(JSON.stringify(m.caso)), TABELAS).totais; } catch (e) { st('O motor não calculou: ' + esc(e.message)); return; }
+  $('#btnSalvar').disabled = true; st('Salvando…');
+  try {
+    // a leitura aprovada e os dados vão sem o texto das peças (o PDF original vai como documento)
+    const r = await CentralPC.salvar({ cnj: estado.cnj, cliente: $('#sCliente').value.trim(), reclamante: $('#sReclamante').value.trim(),
+      reclamado: $('#sReclamado').value.trim(), tipo: $('#sTipo').value, data_liquidacao: dados.contrato.liquidacao,
+      observacao: $('#sObs').value.trim() || null, leitura: estado.leitura, dados, caso: m.caso, totais,
+      premissas: m.premissas, pendencias: m.pendencias, motor: MotorPC.versao });
+    let enviados = 0, falhas = [];
+    if ($('#sDocs').checked) for (const a of estado.arquivos) {
+      st(`Cálculo salvo (versão ${r.versao}). Enviando documentos: ${enviados + 1} de ${estado.arquivos.length}…`);
+      try { await CentralPC.enviarDocumento(r.id, a.arquivo, a.tipo || (estado.docs.find(d => d.arquivo === a.arquivo.name) || {}).tipo); enviados++; }
+      catch (e) { falhas.push(`${a.arquivo.name}: ${e.message}`); }
+    }
+    st(`Salvo na central, versão ${r.versao}${enviados ? `, com ${enviados} documento(s)` : ''}. <a href="resultado.html?id=${r.id}">Abrir o cálculo</a>`
+      + (falhas.length ? `<br>Documentos que não subiram: ${esc(falhas.join('; '))}` : ''));
+  } catch (e) { st('Não consegui salvar: ' + esc(e.message)); }
+  finally { $('#btnSalvar').disabled = false; }
+};
+
+const drop = $('#drop');
+drop.onclick = () => $('#arq').click();
+$('#arq').onchange = e => lerArquivos([...e.target.files]);
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('sobre'); };
+drop.ondragleave = () => drop.classList.remove('sobre');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('sobre'); lerArquivos([...e.dataTransfer.files].filter(f => /pdf$/i.test(f.name))); };
+</script>
+</body>
+</html>

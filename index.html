@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Central de Cálculos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Sora:wght@300;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="central.js"></script>
+<style>
+:root{--side:#0a1d2e;--bg:#F2F5F8;--card:#fff;--ink:#0E2841;--muted:#5d6b7a;--line:#dfe5ec;--cyan:#00AEEF;--cyan2:#009DDC;--navy:#0E2841;
+  --ok:#1E7A3E;--okbg:#e6f4ea;--warn:#9a6700;--warnbg:#fff4d6;--bad:#b42318;--badbg:#fde8e6}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Figtree,system-ui,"Segoe UI",Roboto,Arial,sans-serif}
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+.side{background:linear-gradient(180deg,#001E36,#00294A);color:#cfe3f1;padding:22px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px}
+.marca{text-align:center;margin:4px 0 22px}.marca .wm{font-family:Sora,sans-serif;font-size:30px;color:#fff}.marca .wm b{font-weight:800}.marca .wm span{font-weight:300}
+.marca .tag{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--cyan)}.marca .sub{font-size:11px;color:#8fb2cc;margin-top:2px}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav a{text-decoration:none;padding:10px 12px;border-radius:10px;color:#cfe3f1;font-weight:500}
+.nav a:hover{background:rgba(255,255,255,.06)}.nav a.on{background:rgba(0,174,239,.16);color:#fff;box-shadow:inset 3px 0 0 var(--cyan)}
+.side .rod{margin-top:auto;font-size:12px;color:#9cc3dd;line-height:1.4}
+.side .rod button{all:unset;cursor:pointer;color:#fff;font-weight:600;margin-top:4px;display:inline-block}
+main{padding:26px 30px 60px;min-width:0}
+.topo{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px}
+.topo h1{font-size:22px;margin:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+input,select,.btn{font:inherit;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:8px 12px}
+.btn{cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}.btn.pri{background:var(--navy);border-color:var(--navy);color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer}
+.kpi .v{font-size:26px;font-weight:800}.kpi .k{font-size:12px;color:var(--muted)}
+.kpi.on{box-shadow:inset 0 0 0 2px var(--cyan)}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filtros input{flex:1;min-width:200px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);text-align:left;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:10px 8px;border-bottom:1px solid #eef2f6;vertical-align:top}
+.tbl tr.l{cursor:pointer}.tbl tr.l:hover td{background:#f7fafc}
+.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sub{font-size:12px;color:var(--muted)}
+.st{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap;background:#eef2f6;color:var(--muted)}
+.st.em_revisao{background:#e6f4fb;color:#075985}.st.revisado{background:var(--okbg);color:var(--ok)}
+.st.devolvido{background:var(--warnbg);color:var(--warn)}.st.entregue{background:#e9e7fd;color:#3b2f8f}
+.login{max-width:380px;margin:12vh auto;display:flex;flex-direction:column;gap:10px}
+.login h1{font-size:20px;margin:0 0 4px}.login label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.msg{font-size:13px;color:var(--bad);min-height:18px}
+.vazio{text-align:center;padding:50px 20px;color:var(--muted)}
+.scroll{overflow-x:auto}
+@media (max-width:900px){.app{grid-template-columns:1fr}.side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:12px 16px}
+  .marca{margin:0 12px 0 0;text-align:left}.marca .wm{font-size:22px}.marca .tag,.marca .sub{display:none}.nav{flex-direction:row;flex-wrap:wrap}
+  main{padding:16px}.kpis{grid-template-columns:1fr 1fr}.esc{display:none}}
+
+/* ---------- portal de entrada (no estilo da Central de Base de Dados) ---------- */
+.portal{position:fixed;inset:0;overflow:auto;background:#06131d;color:#eaf4fb;z-index:5}
+.portal canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+.portal .veu{position:fixed;inset:0;z-index:1;pointer-events:none;
+ background:radial-gradient(1100px 620px at 78% -8%,rgba(0,174,239,.22),transparent 60%),radial-gradient(800px 600px at -10% 110%,rgba(0,90,160,.30),transparent 60%),linear-gradient(180deg,rgba(6,19,29,.15),rgba(6,19,29,.75))}
+.portal .pagina{position:relative;z-index:2;min-height:100vh;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(360px,460px);gap:56px;align-items:center;max-width:1280px;margin:0 auto;padding:110px 56px 90px}
+.portal .ptopo{position:absolute;top:32px;left:56px;right:56px;display:flex;align-items:center;justify-content:space-between}
+.portal .ptopo img{height:38px;opacity:.95}
+.portal .pmarca{font-family:Sora,Figtree,sans-serif;font-size:22px;position:relative;padding-top:12px;color:#fff}
+.portal .pmarca b{font-weight:800}.portal .pmarca span{font-weight:300}
+.portal .pmarca small{position:absolute;top:-4px;left:50%;transform:translateX(-50%);font-family:Figtree,sans-serif;font-size:9.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#5fd8ff;white-space:nowrap}
+.portal .pmarca em{display:block;font-style:normal;font-family:Figtree,sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#9fb6c8;text-align:center;margin-top:1px}
+.portal .eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:12.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#5fd8ff;padding:7px 14px 7px 10px;border:1px solid rgba(95,216,255,.28);border-radius:999px;background:rgba(0,174,239,.08)}
+.portal .eyebrow i{width:8px;height:8px;border-radius:50%;background:#00AEEF;animation:pulso 2.2s infinite}
+@keyframes pulso{0%{box-shadow:0 0 0 0 rgba(0,174,239,.65)}80%,100%{box-shadow:0 0 0 12px rgba(0,174,239,0)}}
+.portal h1.ph{font-family:Sora,sans-serif;font-weight:800;font-size:clamp(40px,5.4vw,70px);line-height:1.02;letter-spacing:-.035em;margin:22px 0 18px}
+.portal .grad{background:linear-gradient(100deg,#fff 0%,#9fe8ff 35%,#00AEEF 70%,#5fd8ff 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:brilho 7s ease-in-out infinite}
+@keyframes brilho{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.portal .lead{font-size:18px;line-height:1.6;color:#c5d6e3;max-width:600px;margin:0}
+.portal .pergunta{margin:26px 0 0;min-height:30px;font-size:17px;color:#fff;font-weight:600;display:flex;align-items:center;gap:12px}
+.portal .pergunta .q{color:#5fd8ff}
+.portal .cursor{display:inline-block;width:2px;height:20px;background:#00AEEF;margin-left:2px;animation:pisca 1s steps(1) infinite;vertical-align:-3px}
+@keyframes pisca{50%{opacity:0}}
+.portal .numeros{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:38px;max-width:660px}
+.portal .num{padding:16px 16px 14px;border:1px solid rgba(255,255,255,.10);border-radius:14px;background:rgba(255,255,255,.035);backdrop-filter:blur(6px)}
+.portal .num b{display:block;font-family:Sora,sans-serif;font-weight:600;font-size:28px;letter-spacing:-.02em;color:#fff;font-variant-numeric:tabular-nums}
+.portal .num span{display:block;font-size:12.5px;color:#9fb6c8;margin-top:4px;line-height:1.35}
+.portal .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.portal .chip{font-size:12.5px;color:#cfe2ee;padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04)}
+.portal .cartao{position:relative;padding:34px 34px 28px;border-radius:22px;background:rgba(13,34,52,.58);backdrop-filter:blur(18px) saturate(140%);border:1px solid rgba(255,255,255,.12);box-shadow:0 30px 80px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);overflow:hidden}
+.portal .cartao::before{content:"";position:absolute;inset:-1px;border-radius:22px;padding:1px;pointer-events:none;background:conic-gradient(from var(--ang,0deg),transparent 0 70%,rgba(0,174,239,.9) 80%,transparent 90%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:gira 6s linear infinite}
+@property --ang{syntax:'<angle>';initial-value:0deg;inherits:false}
+@keyframes gira{to{--ang:360deg}}
+.portal .cadeado{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(0,174,239,.25),rgba(0,174,239,.05));border:1px solid rgba(95,216,255,.35);margin-bottom:18px}
+.portal .cartao h2{font-family:Sora,sans-serif;font-weight:600;font-size:24px;letter-spacing:-.02em;margin:0 0 6px;color:#fff}
+.portal .cartao p.psub{margin:0 0 20px;color:#9fb6c8;font-size:14.5px;line-height:1.5}
+.portal label{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#bcd0de;margin:12px 0 7px}
+.portal .cartao input{width:100%;height:50px;border-radius:14px;border:1px solid rgba(255,255,255,.16);background:rgba(4,14,22,.55);color:#fff;font:600 16px Figtree,sans-serif;padding:0 16px;outline:none;transition:border-color .2s,box-shadow .2s}
+.portal .cartao input:focus{border-color:#00AEEF;box-shadow:0 0 0 4px rgba(0,174,239,.18)}
+.portal .botao{margin-top:18px;width:100%;height:52px;border:0;border-radius:14px;cursor:pointer;font:800 16px Figtree,sans-serif;color:#04121c;background:linear-gradient(100deg,#5fd8ff,#00AEEF 55%,#0091d0);box-shadow:0 12px 30px rgba(0,174,239,.35);transition:transform .15s,box-shadow .2s}
+.portal .botao:hover{transform:translateY(-1px);box-shadow:0 16px 36px rgba(0,174,239,.45)}
+.portal .botao:disabled{cursor:wait;filter:saturate(.6);transform:none}
+.portal .links{display:flex;justify-content:space-between;gap:10px;margin-top:14px}
+.portal .links button{all:unset;cursor:pointer;color:#5fd8ff;font-size:13.5px;font-weight:700}
+.portal .links button:hover{text-decoration:underline}
+.portal .msg{min-height:20px;margin-top:12px;font-size:14px;color:#ff8a7a;font-weight:600}
+.portal .seguro{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding-top:16px;border-top:1px solid rgba(255,255,255,.10);font-size:12.5px;color:#9fb6c8;line-height:1.5}
+.portal .rodape{position:absolute;left:56px;right:56px;bottom:26px;display:flex;justify-content:space-between;font-size:12.5px;color:#7f97aa}
+.tremor{animation:tremor .42s}
+@keyframes tremor{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+@media (max-width:980px){.portal .pagina{grid-template-columns:1fr;gap:34px;padding:110px 20px 90px}.portal .ptopo{left:20px;right:20px;top:24px}
+ .portal .rodape{left:20px;right:20px;flex-direction:column;gap:4px}.portal .numeros{grid-template-columns:repeat(2,minmax(0,1fr))}.portal .cartao{padding:26px 22px 22px}}
+@media (prefers-reduced-motion:reduce){.portal *,.portal *::before{animation:none!important;transition:none!important}}
+
+/* ---------- área interna mais viva ---------- */
+.boasvindas{position:relative;overflow:hidden;border-radius:18px;padding:24px 26px;margin-bottom:18px;color:#fff;
+ background:radial-gradient(120% 160% at 100% 0%,rgba(0,174,239,.38),transparent 55%),linear-gradient(135deg,#001E36,#00294A)}
+.boasvindas h1{font-family:Sora,sans-serif;font-weight:600;font-size:26px;letter-spacing:-.02em;margin:0 0 4px}
+.boasvindas p{margin:0;color:#b9d3e4;font-size:14.5px}
+.boasvindas .acoes{position:absolute;right:24px;top:50%;transform:translateY(-50%);display:flex;gap:8px;flex-wrap:wrap}
+.boasvindas .btn{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff}
+.boasvindas .btn.pri{background:linear-gradient(100deg,#5fd8ff,#00AEEF 55%,#0091d0);border:0;color:#04121c;box-shadow:0 10px 24px rgba(0,174,239,.35)}
+.kpi{position:relative;overflow:hidden;transition:transform .15s,box-shadow .2s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(14,40,65,.08)}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--cor,#00AEEF)}
+.kpi .v{font-family:Sora,sans-serif;font-weight:600}
+.av{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#e6f4fb;color:#075985;font-weight:800;font-size:12px;margin-right:8px;vertical-align:middle}
+@media (max-width:900px){.boasvindas .acoes{position:static;transform:none;margin-top:14px}}
+</style>
+<link rel="stylesheet" href="visual.css">
+</head>
+<body>
+<div id="telaLogin" class="portal" hidden>
+  <canvas id="rede" aria-hidden="true"></canvas><div class="veu"></div>
+  <div class="pagina">
+    <div class="ptopo"><img src="img/logo_pc_branca.png" alt="Peixoto &amp; Cury Advogados">
+      <div class="pmarca"><small>Cálculos</small><b>LAW</b><span>gico</span><em>lawyers at work</em></div></div>
+    <section>
+      <span class="eyebrow"><i></i>Plataforma de cálculos trabalhistas</span>
+      <h1 class="ph">Central de<br><span class="grad">Cálculos</span></h1>
+      <p class="lead">Lê a sentença, monta o cálculo e confere cada centavo contra o contador. Liquidação, impugnação, provisão e acordo, com revisão e histórico da equipe.</p>
+      <div class="pergunta" aria-live="polite"><span class="q">›</span><span id="pergunta"></span><span class="cursor"></span></div>
+      <div class="numeros">
+        <div class="num"><b data-n="5198">0</b><span>ocorrências iguais às do contador</span></div>
+        <div class="num"><b data-n="256">0</b><span>meses de salário lidos dos holerites</span></div>
+        <div class="num"><b data-n="1028">0</b><span>dias de cartão de ponto conferidos</span></div>
+        <div class="num"><b data-n="13">0</b><span>de 13 totais do acordo iguais</span></div>
+      </div>
+      <div class="chips"><span class="chip">Login individual</span><span class="chip">Permissão por equipe</span><span class="chip">Revisão com checklist</span><span class="chip">PDF, Excel e acordo</span></div>
+    </section>
+    <aside class="cartao" id="cartaoLogin">
+      <form id="fLogin">
+        <div class="cadeado"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9fe8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.4" fill="#9fe8ff"/></svg></div>
+        <h2 id="lTitulo">Acesso restrito</h2>
+        <p class="psub" id="lDica">Área exclusiva da equipe do Peixoto &amp; Cury. Quem já usa outra ferramenta LAWgico entra com o mesmo e-mail e senha.</p>
+        <div id="lNomeBox" hidden><label for="lNome">Seu nome completo</label><input id="lNome" autocomplete="name"></div>
+        <label for="lEmail">E-mail</label><input type="email" id="lEmail" autocomplete="username" required>
+        <label for="lSenha">Senha</label><input type="password" id="lSenha" autocomplete="current-password" required>
+        <div id="lSenha2Box" hidden><label for="lSenha2">Repita a senha</label><input type="password" id="lSenha2" autocomplete="new-password"></div>
+        <button class="botao" type="submit" id="lBotao">Entrar</button>
+        <div class="links"><button type="button" id="lTroca">Criar meu acesso</button><button type="button" id="lEsqueci">Esqueci minha senha</button></div>
+        <div class="msg" id="lMsg" role="alert"></div>
+      </form>
+      <div class="seguro"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5fd8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+        <span>Cada pessoa entra com o próprio login e só vê os cálculos da sua equipe. Peças e documentos ficam em área privada.</span></div>
+    </aside>
+    <div class="rodape"><span>Desenvolvido pelo Peixoto &amp; Cury Advogados</span><span>Uso interno e confidencial · contém dados pessoais</span></div>
+  </div>
+</div>
+
+<div id="telaNovaSenha" class="portal" hidden>
+  <div class="veu"></div>
+  <div class="pagina" style="grid-template-columns:minmax(320px,460px);justify-content:center">
+    <aside class="cartao">
+      <form id="fNova">
+        <h2>Nova senha</h2><p class="psub">Crie uma senha só sua, com pelo menos 8 caracteres.</p>
+        <label for="nSenha">Nova senha</label><input type="password" id="nSenha" autocomplete="new-password" required minlength="6">
+        <label for="nSenha2">Repita a nova senha</label><input type="password" id="nSenha2" autocomplete="new-password" required>
+        <button class="botao" type="submit">Salvar nova senha</button>
+        <div class="msg" id="nMsg"></div>
+      </form>
+    </aside>
+  </div>
+</div>
+
+<div class="app" id="telaApp" hidden>
+  <aside class="side">
+    <img class="logo-pc" src="img/logo_pc_branca.png" alt="Peixoto &amp; Cury Advogados">
+    <div class="marca"><div class="tag">cálculos</div><div class="wm"><b>LAW</b><span>gico</span></div><div class="sub">lawyers at work</div></div>
+    <nav class="nav">
+      <a class="on" href="index.html">Cálculos da equipe</a>
+      <a href="novo.html">Novo cálculo</a>
+      <a href="resultado.html">Resultado do cálculo</a>
+      <a href="#" id="navEquipe" hidden>Equipe</a>
+    </nav>
+    <div class="rod"><span id="quem"></span><br><button id="bSair" type="button">Sair</button></div>
+  </aside>
+  <main>
+    <div class="boasvindas"><h1 id="ola">Cálculos da equipe</h1><p id="olaSub">Liquidação, impugnação, provisão e acordo, com revisão e histórico.</p>
+      <div class="acoes"><button class="btn" id="bDemo" hidden>Carregar casos de teste</button><a class="btn pri" href="novo.html">+ Novo cálculo</a></div></div>
+    <div class="msg" id="demoMsg" style="color:var(--muted);margin:-8px 0 10px"></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="filtros">
+      <input id="fBusca" placeholder="Buscar por processo ou reclamante">
+      <select id="fTipo"><option value="">Todos os tipos</option></select>
+      <select id="fCliente"><option value="">Todos os clientes</option></select>
+    </div>
+    <div class="card scroll" id="lista"><div class="vazio">Carregando…</div></div>
+  </main>
+  <main id="telaEquipe" hidden>
+    <div class="topo"><h1>Equipe</h1><a class="btn" href="index.html">Voltar para os cálculos</a></div>
+    <div class="card" style="margin-bottom:16px"><h2 style="font-size:15px;margin:0 0 10px">Pedidos de acesso</h2><div id="ePedidos"></div></div>
+    <div class="card scroll"><h2 style="font-size:15px;margin:0 0 10px">Pessoas com acesso</h2><div id="eUsuarios"></div></div>
+    <div class="msg" id="eMsg"></div>
+  </main>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const brl = v => v == null ? '' : (+v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const dh = s => s ? new Date(s).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+let todos = [], filtroStatus = '';
+
+for (const [k, v] of Object.entries(CentralPC.TIPOS)) $('#fTipo').insertAdjacentHTML('beforeend', `<option value="${k}">${v}</option>`);
+
+async function iniciar() {
+  if (emRecuperacao) { $('#telaLogin').hidden = $('#telaApp').hidden = true; $('#telaNovaSenha').hidden = false; return; }
+  const u = await CentralPC.eu().catch(() => null);
+  if (!u) { $('#telaLogin').hidden = false; $('#telaApp').hidden = true; return; }
+  $('#telaLogin').hidden = true; $('#telaApp').hidden = false;
+  if (u.semCadastro) {
+    $('#quem').textContent = u.email;
+    telaPedido(u, await CentralPC.meuPedido().catch(() => null));
+    return;
+  }
+  $('#quem').innerHTML = `<b>${esc(u.nome)}</b><br>${esc(u.equipe)} · ${u.papel === 'admin' ? 'administração' : u.papel}`;
+  $('#navEquipe').hidden = u.papel !== 'admin';
+  const h = new Date().getHours(); $('#ola').textContent = `${h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}, ${u.nome.split(' ')[0]}`;
+  $('#olaSub').textContent = `Cálculos da equipe ${u.papel === 'admin' ? '(todas as equipes)' : u.equipe}: liquidação, impugnação, provisão e acordo, com revisão e histórico.`;
+  $('#bDemo').hidden = !(u.papel === 'admin' && /^(localhost|127\.0\.0\.1)$/.test(location.hostname));
+  await carregar();
+}
+async function carregar() {
+  try { todos = await CentralPC.listar({}); } catch (e) { $('#lista').innerHTML = `<div class="vazio">Não consegui carregar: ${esc(e.message)}</div>`; return; }
+  const clientes = [...new Set(todos.map(c => c.cliente).filter(Boolean))].sort();
+  $('#fCliente').innerHTML = '<option value="">Todos os clientes</option>' + clientes.map(c => `<option>${esc(c)}</option>`).join('');
+  desenhar();
+}
+function desenhar() {
+  const conta = s => todos.filter(c => c.status === s).length;
+  const k = [['', 'Ativos', todos.length], ['em_revisao', 'Em revisão', conta('em_revisao')], ['devolvido', 'Devolvidos para ajuste', conta('devolvido')], ['revisado', 'Revisados', conta('revisado')]];
+  const COR = { '': '#00AEEF', em_revisao: '#0284c7', devolvido: '#d97706', revisado: '#16a34a' };
+  $('#kpis').innerHTML = k.map(([s, rot, n]) => `<div class="kpi ${filtroStatus === s ? 'on' : ''}" data-s="${s}" style="--cor:${COR[s]}"><div class="v">${n}</div><div class="k">${rot}</div></div>`).join('');
+  document.querySelectorAll('.kpi').forEach(el => el.onclick = () => { filtroStatus = el.dataset.s; desenhar(); });
+  const b = $('#fBusca').value.trim().toLowerCase(), t = $('#fTipo').value, cl = $('#fCliente').value;
+  const vis = todos.filter(c => (!filtroStatus || c.status === filtroStatus) && (!t || c.tipo === t) && (!cl || c.cliente === cl)
+    && (!b || (c.cnj || '').toLowerCase().includes(b) || (c.reclamante || '').toLowerCase().includes(b)));
+  $('#lista').innerHTML = vis.length ? `<table class="tbl"><thead><tr><th>Processo</th><th>Cliente</th><th>Tipo</th><th>Situação</th><th class="esc">Responsável</th><th class="n">Líquido</th><th class="esc">Atualizado</th></tr></thead><tbody>${
+    vis.map(c => `<tr class="l" data-id="${c.id}"><td><b>${esc(c.cnj)}</b><div class="sub">${esc(c.reclamante || '')}</div></td><td>${esc(c.cliente)}</td>
+      <td>${esc(CentralPC.TIPOS[c.tipo] || c.tipo)}<div class="sub">versão ${c.versao_atual}</div></td><td><span class="st ${c.status}">${esc(CentralPC.STATUS[c.status] || c.status)}</span></td>
+      <td class="esc"><span class="av">${esc((c.responsavel_nome || '?').split(' ').filter(Boolean).slice(0, 2).map(x => x[0]).join(''))}</span>${esc(c.responsavel_nome || '')}${c.revisor_nome ? `<div class="sub">revisão: ${esc(c.revisor_nome)}</div>` : ''}</td>
+      <td class="n">${brl(c.liquido)}</td><td class="esc sub">${dh(c.atualizado_em)}</td></tr>`).join('')}</tbody></table>`
+    : '<div class="vazio">Nenhum cálculo com esses filtros.</div>';
+  document.querySelectorAll('tr.l').forEach(tr => tr.onclick = () => { location.href = `resultado.html?id=${tr.dataset.id}`; });
+}
+
+// ---------- criar acesso ----------
+let modoCriar = false;
+$('#lTroca').onclick = () => {
+  modoCriar = !modoCriar;
+  $('#lNomeBox').hidden = $('#lSenha2Box').hidden = !modoCriar;
+  $('#lBotao').textContent = modoCriar ? 'Criar acesso' : 'Entrar';
+  $('#lTitulo').textContent = modoCriar ? 'Criar meu acesso' : 'Acesso restrito';
+  $('#lTroca').textContent = modoCriar ? 'Já tenho acesso' : 'Criar meu acesso';
+  $('#lDica').textContent = modoCriar ? 'Use o seu e-mail @peixotoecury.com.br. A administração aprova o acesso e define a sua equipe.' : 'Quem já usa outra ferramenta LAWgico entra com o mesmo e-mail e senha.';
+  $('#lSenha').autocomplete = modoCriar ? 'new-password' : 'current-password'; $('#lMsg').textContent = '';
+};
+async function criar() {
+  const nome = $('#lNome').value.trim(), email = $('#lEmail').value.trim(), s1 = $('#lSenha').value;
+  if (!nome) throw new Error('Informe o seu nome.');
+  if (s1 !== $('#lSenha2').value) throw new Error('As duas senhas não são iguais.');
+  const r = await CentralPC.criarLogin(nome, email, s1);
+  if (r === 'confirmar_email') { $('#lMsg').style.color = 'var(--ok)'; $('#lMsg').textContent = 'Acesso criado. Abra o link que chegou no seu e-mail e depois entre com a sua senha.'; return false; }
+  return true;
+}
+function telaPedido(u, pedido) {
+  $('#lista').innerHTML = pedido && pedido.situacao === 'pendente'
+    ? `<div class="vazio">Seu pedido de acesso foi enviado em ${dh(pedido.criado_em)} e aguarda aprovação da administração.</div>`
+    : `<div class="vazio">Seu login (${esc(u.email)}) ainda não tem acesso à Central de Cálculos.<div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <input id="pNome" placeholder="Seu nome completo" style="min-width:260px"><button class="btn pri" id="pPedir">Pedir acesso</button></div>
+        ${pedido && pedido.situacao === 'recusado' ? '<div style="margin-top:8px">O pedido anterior foi recusado. Fale com a administração antes de pedir de novo.</div>' : ''}<div class="msg" id="pMsg"></div></div>`;
+  const b = $('#pPedir');
+  if (b) b.onclick = async () => {
+    if (!$('#pNome').value.trim()) { $('#pMsg').textContent = 'Informe o seu nome.'; return; }
+    try { await CentralPC.pedirAcesso($('#pNome').value.trim()); iniciar(); } catch (e) { $('#pMsg').textContent = e.message; }
+  };
+}
+
+// ---------- equipe (administração) ----------
+const PAPEIS = { advogado: 'Advogado(a)', revisor: 'Revisor(a)', admin: 'Administração' };
+const sel = (id, atual) => `<select id="${id}">${Object.entries(PAPEIS).map(([k, v]) => `<option value="${k}" ${k === atual ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+async function abrirEquipe() {
+  document.querySelector('main:not(#telaEquipe)').hidden = true; $('#telaEquipe').hidden = false;
+  document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.id === 'navEquipe'));
+  let ps, us;
+  try { [ps, us] = await Promise.all([CentralPC.pedidos(), CentralPC.usuarios()]); } catch (e) { $('#eMsg').textContent = e.message; return; }
+  $('#ePedidos').innerHTML = ps.length ? `<table class="tbl"><tbody>${ps.map((p, i) => `<tr><td><b>${esc(p.nome)}</b><div class="sub">${esc(p.email)} · ${dh(p.criado_em)}</div></td>
+      <td><input id="pe${i}" value="B1" style="width:120px" title="Equipe: quem é da mesma equipe vê os mesmos cálculos"></td><td>${sel('pp' + i, 'advogado')}</td>
+      <td style="white-space:nowrap"><button class="btn pri" data-ap="${i}">Aprovar</button> <button class="btn" data-rc="${i}">Recusar</button></td></tr>`).join('')}</tbody></table>`
+    : '<div class="sub">Nenhum pedido pendente.</div>';
+  $('#eUsuarios').innerHTML = `<table class="tbl"><thead><tr><th>Pessoa</th><th>Equipe</th><th>Papel</th><th>Ativo</th><th></th></tr></thead><tbody>${us.map((u, i) => `<tr>
+      <td><b>${esc(u.nome)}</b><div class="sub">${esc(u.email)}</div></td><td><input id="ue${i}" value="${esc(u.equipe)}" style="width:120px"></td>
+      <td>${sel('up' + i, u.papel)}</td><td><input type="checkbox" id="ua${i}" ${u.ativo ? 'checked' : ''}></td><td><button class="btn" data-aj="${i}">Salvar</button></td></tr>`).join('')}</tbody></table>`;
+  const tenta = async f => { $('#eMsg').textContent = ''; try { await f(); abrirEquipe(); } catch (e) { $('#eMsg').textContent = 'Não consegui: ' + e.message; } };
+  document.querySelectorAll('[data-ap]').forEach(b => b.onclick = () => { const i = +b.dataset.ap; tenta(() => CentralPC.decidirAcesso(ps[i].user_id, true, $('#pe' + i).value.trim() || 'Time B', $('#pp' + i).value)); });
+  document.querySelectorAll('[data-rc]').forEach(b => b.onclick = () => { const i = +b.dataset.rc; if (confirm(`Recusar o acesso de ${ps[i].nome}?`)) tenta(() => CentralPC.decidirAcesso(ps[i].user_id, false, null, null)); });
+  document.querySelectorAll('[data-aj]').forEach(b => b.onclick = () => { const i = +b.dataset.aj; tenta(() => CentralPC.ajustarUsuario(us[i].user_id, $('#ue' + i).value.trim() || 'Time B', $('#up' + i).value, $('#ua' + i).checked)); });
+}
+$('#navEquipe').onclick = e => { e.preventDefault(); abrirEquipe(); };
+
+
+// ---------- senha esquecida ----------
+$('#lEsqueci').onclick = async () => {
+  const email = $('#lEmail').value.trim();
+  if (!email) { $('#lMsg').textContent = 'Escreva o seu e-mail acima e clique de novo em "Esqueci minha senha".'; return; }
+  try { await CentralPC.esqueciSenha(email); $('#lMsg').style.color = 'var(--ok)'; $('#lMsg').textContent = 'Se esse e-mail tiver login, chega em instantes um link para criar uma senha nova.'; }
+  catch (e) { $('#lMsg').style.color = ''; $('#lMsg').textContent = e.message; }
+};
+// o link do e-mail volta para esta página: o Supabase avisa com o evento PASSWORD_RECOVERY
+let emRecuperacao = /type=recovery/.test(location.hash);
+CentralPC.sb.auth.onAuthStateChange(ev => {
+  if (ev === 'PASSWORD_RECOVERY') { emRecuperacao = true; $('#telaLogin').hidden = $('#telaApp').hidden = true; $('#telaNovaSenha').hidden = false; }
+});
+$('#fNova').onsubmit = async e => {
+  e.preventDefault();
+  if ($('#nSenha').value !== $('#nSenha2').value) { $('#nMsg').textContent = 'As duas senhas não são iguais.'; return; }
+  try { await CentralPC.trocarSenha($('#nSenha').value); emRecuperacao = false; history.replaceState(null, '', location.pathname); $('#telaNovaSenha').hidden = true; iniciar(); }
+  catch (err) { $('#nMsg').textContent = err.message; }
+};
+
+
+// ---------- casos de teste (só na máquina com a bancada, só administração) ----------
+const carregaScript = src => new Promise((ok, er) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = er; document.head.appendChild(s); });
+function clienteDe(c) { const r = ((c.processo || {}).reclamado || c.arquivo || '').toUpperCase(); return /CARTUCH|CBC/.test(r) ? 'CBC' : /BRIDGESTONE/.test(r) ? 'Bridgestone' : 'Bridgestone'; }
+function tipoDe(nome) {
+  const n = nome.toLowerCase();
+  if (/impugna/.test(n)) return 'impugnacao';
+  if (/inicial/.test(n)) return 'inicial';
+  if (/laudo/.test(n)) return 'outro';
+  return 'liquidacao';
+}
+$('#bDemo').onclick = async () => {
+  const msg = t => { $('#demoMsg').textContent = t; };
+  let nomes;
+  try { nomes = [...(await (await fetch('../bancada/casos/')).text()).matchAll(/href="([^"]+\.json)"/g)].map(m => decodeURIComponent(m[1])); }
+  catch (e) { msg('A pasta da bancada não está disponível neste computador.'); return; }
+  if (!confirm(`Salvar ${nomes.length} casos de teste na central (os cálculos do contador conferidos na bancada)? Casos já salvos são pulados.`)) return;
+  $('#bDemo').disabled = true;
+  try {
+    if (!window.MotorPC) { msg('Carregando o motor…'); await carregaScript('motor/tabelas.js'); await carregaScript('motor/motor.js'); }
+    const ja = new Set(todos.map(c => c.cnj)); let ok = 0, pulados = 0, falhas = [];
+    for (const [i, nome] of nomes.entries()) {
+      msg(`Salvando ${i + 1} de ${nomes.length}…`);
+      try {
+        const caso = await (await fetch('../bancada/casos/' + encodeURIComponent(nome))).json();
+        const cnj = (caso.processo || {}).cnj || (nome.match(/\d{7}-\d{2}\.\d{4}\.5\.02\.\d{4}/) || [])[0];
+        if (!cnj || ja.has(cnj)) { pulados++; continue; }
+        const ct = caso.parametros.contrato;
+        const op = { tabelasAte: ct.dataCriacao || null, indiceAte: (caso.parametros.atualizacao || {}).ultimoIndice || null };
+        const r = MotorPC.calcular(JSON.parse(JSON.stringify(caso)), TABELAS, op);
+        Object.assign(MotorPC.OPCOES, { tabelasAte: null, indiceAte: null });   // não deixa a data do contador presa no motor
+        await CentralPC.salvar({ cnj, cliente: clienteDe(caso), tipo: tipoDe(nome), reclamante: (caso.processo || {}).reclamante || '', reclamado: (caso.processo || {}).reclamado || '',
+          data_liquidacao: ct.liquidacao, caso, totais: r.totais, motor: MotorPC.versao,
+          observacao: 'Caso de teste: cálculo do contador reproduzido pela plataforma (bancada).', observacao_versao: 'Carga de demonstração' });
+        ja.add(cnj); ok++;
+      } catch (e) { falhas.push(nome.slice(0, 40) + ': ' + e.message); }
+    }
+    msg(`${ok} caso(s) de teste salvos${pulados ? `, ${pulados} já existiam` : ''}.${falhas.length ? ' Falharam: ' + falhas.join('; ') : ''}`);
+    await carregar();
+  } finally { $('#bDemo').disabled = false; }
+};
+
+
+// ---------- portal: rede animada, perguntas digitando e contadores ----------
+(function () {
+  const c = document.getElementById('rede'), x = c.getContext('2d'), R = devicePixelRatio || 1, parado = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  let W, H, P = [], mx = -999, my = -999;
+  function tam() { W = innerWidth; H = innerHeight; c.width = W * R; c.height = H * R; x.setTransform(R, 0, 0, R, 0, 0);
+    const n = Math.min(110, Math.round(W * H / 14000)); P = [];
+    for (let i = 0; i < n; i++) P.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .28, vy: (Math.random() - .5) * .28, r: Math.random() * 1.6 + .6, f: Math.random() * 6.28 }); }
+  addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY }); addEventListener('resize', tam); tam();
+  function quadro(t) {
+    if (!$('#telaLogin').hidden) {
+      x.clearRect(0, 0, W, H);
+      for (let i = 0; i < P.length; i++) { const a = P[i]; a.x += a.vx; a.y += a.vy; if (a.x < 0 || a.x > W) a.vx *= -1; if (a.y < 0 || a.y > H) a.vy *= -1;
+        for (let j = i + 1; j < P.length; j++) { const b = P[j], dx = a.x - b.x, dy = a.y - b.y, d = dx * dx + dy * dy;
+          if (d < 17000) { x.strokeStyle = `rgba(0,174,239,${0.16 * (1 - d / 17000)})`; x.lineWidth = 1; x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(b.x, b.y); x.stroke(); } }
+        const dm = Math.hypot(a.x - mx, a.y - my), perto = dm < 160;
+        if (perto) { x.strokeStyle = `rgba(95,216,255,${0.35 * (1 - dm / 160)})`; x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(mx, my); x.stroke(); }
+        x.fillStyle = `rgba(159,232,255,${perto ? .95 : .45 + .35 * Math.sin(t / 900 + a.f)})`; x.beginPath(); x.arc(a.x, a.y, a.r + (perto ? 1 : 0), 0, 6.28); x.fill(); }
+    }
+    if (!parado) requestAnimationFrame(quadro);
+  }
+  requestAnimationFrame(quadro);
+  const els = [...document.querySelectorAll('.num b')], ini = performance.now();
+  (function passo(t) { const p = Math.min(1, (t - ini) / 1800), e = 1 - Math.pow(1 - p, 4); els.forEach(el => { el.textContent = Math.round(+el.dataset.n * e).toLocaleString('pt-BR') }); if (p < 1) requestAnimationFrame(passo) })(ini);
+  const Q = ['Qual o líquido do reclamante nesta liquidação?', 'O cálculo da parte contrária bate com a sentença?', 'Quanto custa este acordo com INSS e honorários?',
+             'Quantas horas extras o cartão de ponto mostra?', 'Qual era o valor na data da distribuição?', 'Quem revisou e quando foi entregue?'];
+  const el = document.getElementById('pergunta'); let i = 0, k = 0, apaga = false;
+  (function digita() { const q = Q[i];
+    if (!apaga) { k++; el.textContent = q.slice(0, k); if (k === q.length) { apaga = true; return setTimeout(digita, 2300) } return setTimeout(digita, 38) }
+    k--; el.textContent = q.slice(0, k); if (k === 0) { apaga = false; i = (i + 1) % Q.length; return setTimeout(digita, 350) } setTimeout(digita, 16) })();
+})();
+
+['#fBusca', '#fTipo', '#fCliente'].forEach(s => $(s).oninput = desenhar);
+$('#fLogin').onsubmit = async e => {
+  e.preventDefault(); $('#lMsg').textContent = '';
+  try { if (modoCriar) { if (!(await criar())) return; } else await CentralPC.entrar($('#lEmail').value.trim(), $('#lSenha').value); iniciar(); }
+  catch (err) { $('#lMsg').textContent = err.message; const f = $('#fLogin'); f.classList.remove('tremor'); void f.offsetWidth; f.classList.add('tremor'); }
+};
+$('#bSair').onclick = async () => { await CentralPC.sair(); iniciar(); };
+iniciar();
+</script>
+</body>
+</html>

@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>LAWgico Cálculos · Peixoto &amp; Cury</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Sora:wght@300;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --side:#0a1d2e; --side2:#00294A; --bg:#F2F5F8; --card:#fff; --ink:#0E2841; --muted:#5d6b7a; --line:#dfe5ec;
+  --cyan:#00AEEF; --cyan2:#009DDC; --navy:#0E2841; --ok:#1E7A3E; --okbg:#e6f4ea; --warn:#9a6700; --warnbg:#fff4d6; --bad:#b42318; --badbg:#fde8e6;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Figtree,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+a{color:var(--cyan2)}
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+/* sidebar */
+.side{background:linear-gradient(180deg,#001E36,#00294A);color:#cfe3f1;padding:22px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px}
+.marca{text-align:center;margin:4px 0 22px}
+.marca .wm{font-family:Sora,sans-serif;font-size:30px;color:#fff;letter-spacing:.5px}
+.marca .wm b{font-weight:800}.marca .wm span{font-weight:300}
+.marca .tag{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--cyan)}
+.marca .sub{font-size:11px;color:#8fb2cc;margin-top:2px}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav button{all:unset;cursor:pointer;padding:10px 12px;border-radius:10px;color:#cfe3f1;font-weight:500;display:flex;justify-content:space-between;align-items:center}
+.nav button:hover{background:rgba(255,255,255,.06)}
+.nav a{text-decoration:none;padding:10px 12px;border-radius:10px;color:#cfe3f1;font-weight:500}
+.nav a:hover{background:rgba(255,255,255,.06)}.nav a.on{background:rgba(0,174,239,.16);color:#fff;box-shadow:inset 3px 0 0 var(--cyan)}
+.nav button.on{background:rgba(0,174,239,.16);color:#fff;box-shadow:inset 3px 0 0 var(--cyan)}
+.nav button[disabled]{opacity:.45;cursor:default}
+.nav .em{font-size:10px;text-transform:uppercase;letter-spacing:1px;background:rgba(255,255,255,.1);padding:2px 6px;border-radius:6px}
+.side .rod{margin-top:auto;font-size:11px;color:#7e9db4;line-height:1.4}
+/* main */
+main{padding:26px 30px 60px;min-width:0}
+.topo{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+.topo h1{font-size:22px;margin:0}
+.topo .acoes{display:flex;gap:8px;flex-wrap:wrap}
+.acordo input{font:inherit;border:1px solid var(--line);border-radius:10px;padding:7px 10px;width:100%}
+.acordo .campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0}
+.acordo label{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+select,.btn{font:inherit;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:8px 12px}
+.btn{cursor:pointer;font-weight:600}
+.saidas{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 0}.saidas span{font-size:12px;color:var(--muted)}
+.cent{margin-bottom:16px}.cent .linha1{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.cent .st{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:20px;background:#eef2f6;color:var(--muted)}
+.cent .st.em_revisao{background:#e6f4fb;color:#075985}.cent .st.revisado{background:var(--okbg);color:var(--ok)}.cent .st.devolvido{background:var(--warnbg);color:var(--warn)}.cent .st.entregue{background:#e9e7fd;color:#3b2f8f}
+.cent .abas{display:flex;gap:6px;margin:12px 0 8px;flex-wrap:wrap}.cent .abas button{all:unset;cursor:pointer;font-size:13px;font-weight:600;padding:5px 10px;border-radius:8px;color:var(--muted)}
+.cent .abas button.on{background:#e6f4fb;color:#075985}
+.cent .chk-item{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin:6px 0}.cent .chk-item input[type=text]{flex:1;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:4px 8px}
+.cent textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:10px;padding:8px;min-height:60px}
+.cent .msg{font-size:13px;margin-top:6px}
+.btn.pri{background:var(--navy);border-color:var(--navy);color:#fff}
+.hero{background:radial-gradient(120% 140% at 100% 0%,rgba(0,174,239,.35),transparent 55%),linear-gradient(135deg,#001E36,#00294A);color:#fff;border-radius:14px;padding:22px 24px;display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:18px;align-items:end}
+.hero .proc .k{font-size:12px;color:#9cc3dd;text-transform:uppercase;letter-spacing:1.2px}
+.hero .proc .nome{font-size:19px;font-weight:700;margin:2px 0}
+.hero .proc .cnj{font-size:13px;color:#cfe3f1}
+.kpi .k{font-size:12px;color:#9cc3dd}
+.kpi .v{font-size:22px;font-weight:800;letter-spacing:-.3px}
+.kpi .s{font-size:12px;color:#9cc3dd}
+.selo{margin-top:14px;display:flex;gap:10px;align-items:flex-start;background:var(--okbg);border:1px solid #b7dfc3;color:#14532d;border-radius:12px;padding:12px 14px;font-size:14px}
+.selo.parcial{background:var(--warnbg);border-color:#f0d58a;color:#5c4100}
+.selo b{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.card h2{font-size:15px;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card h2 small{font-weight:500;color:var(--muted);font-size:12px}
+dl.par{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0;font-size:14px}
+dl.par dt{color:var(--muted)}dl.par dd{margin:0;font-weight:600}
+.pend{font-size:13px;color:var(--muted);margin:0;padding-left:18px}
+.pend li{margin:3px 0}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:9px 8px;border-bottom:1px solid #eef2f6;vertical-align:top}
+.tbl td.n,.tbl th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl tr.verba{cursor:pointer}
+.tbl tr.verba:hover td{background:#f7fafc}
+.tbl tr.tot td{font-weight:800;border-top:2px solid var(--ink);border-bottom:none}
+.tipo{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.chk{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.chk.ok{background:var(--okbg);color:var(--ok)}.chk.dif{background:var(--badbg);color:var(--bad)}.chk.na{background:#eef2f6;color:var(--muted)}
+.det td{background:#fafcfd;padding:0}
+.det .wrap{padding:6px 10px 14px;overflow:auto}
+.det table{width:100%;border-collapse:collapse;font-size:13px}
+.det th{font-size:11px;color:var(--muted);text-align:right;padding:6px;border-bottom:1px solid var(--line);white-space:nowrap}
+.det th:first-child,.det td:first-child{text-align:left}
+.det td{text-align:right;padding:5px 6px;border-bottom:1px solid #eef2f6;font-variant-numeric:tabular-nums;white-space:nowrap}
+.det tr.x td{background:var(--badbg)}
+.inf{font-size:10px;font-weight:700;color:var(--cyan2);text-transform:uppercase;margin-left:4px}
+.seta{display:inline-block;width:14px;color:var(--muted);transition:transform .15s}
+tr.aberta .seta{transform:rotate(90deg)}
+.vazio{text-align:center;padding:60px 20px;color:var(--muted)}
+.lnk{all:unset;cursor:pointer;color:var(--cyan2);font-size:13px;font-weight:600}
+.tbl.res td{padding:7px 4px}
+.tbl.res tr.sub td{font-weight:700;border-top:1px solid var(--line)}
+.n.neg{color:var(--muted)}
+details.bloco{margin-top:16px;padding:0}
+details.bloco summary{list-style:none;cursor:pointer;padding:16px 20px}
+details.bloco summary::-webkit-details-marker{display:none}
+details.bloco summary h2{margin:0;justify-content:flex-start}
+details.bloco summary h2::before{content:'\203A';display:inline-block;margin-right:4px;color:var(--muted);transition:transform .15s}
+details.bloco[open] summary h2::before{transform:rotate(90deg)}
+details.bloco .wrap{padding:0 20px 18px}
+table.mini{width:100%;border-collapse:collapse;font-size:13px}
+table.mini th{font-size:11px;color:var(--muted);text-align:right;padding:6px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.mini td{text-align:right;padding:5px 6px;border-bottom:1px solid #eef2f6;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.mini th:first-child,table.mini td:first-child{text-align:left}
+table.mini tr.x td{background:var(--badbg)}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:12px 16px}
+  .marca{margin:0 12px 0 0;text-align:left}.marca .wm{font-size:22px}.marca .tag,.marca .sub{display:none}
+  .nav{flex-direction:row;flex-wrap:wrap}.side .rod{display:none}
+  main{padding:16px}
+  .hero{grid-template-columns:1fr 1fr}.hero .proc{grid-column:1/-1}
+  .grid2{grid-template-columns:1fr}
+  .tbl .esc{display:none}
+  .scroll{overflow-x:auto}
+}
+</style>
+<link rel="stylesheet" href="visual.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <img class="logo-pc" src="img/logo_pc_branca.png" alt="Peixoto &amp; Cury Advogados">
+    <div class="marca">
+      <div class="tag">cálculos</div>
+      <div class="wm"><b>LAW</b><span>gico</span></div>
+      <div class="sub">lawyers at work</div>
+    </div>
+    <nav class="nav">
+      <a href="index.html">Cálculos da equipe</a>
+      <a href="novo.html">Novo cálculo</a>
+      <a class="on" href="resultado.html">Resultado do cálculo</a>
+    </nav>
+    <div class="rod">Plataforma de Cálculos Peixoto &amp; Cury<br>Motor <span id="versao"></span> · tabelas do PJe-Calc (TRT 2ª Região) até <span id="tabAte"></span></div>
+  </aside>
+
+  <main>
+    <div class="topo">
+      <h1>Resultado do cálculo</h1>
+      <div class="acoes">
+        <select id="selCaso" aria-label="Caso"><option value="">Escolha um caso…</option></select>
+        <label class="btn">Abrir caso<input id="arq" type="file" accept=".json" hidden></label>
+      </div>
+    </div>
+    <div id="centralBox"></div>
+    <div id="conteudo"><div class="card vazio">Escolha um caso para ver o cálculo.</div></div>
+  </main>
+</div>
+
+<script src="motor/tabelas.js"></script>
+<script src="motor/motor.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="motor/acordo.js"></script>
+<script src="saidas.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="central.js"></script>
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const brl = v => (v ?? 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+  const num = (v, d=2) => v == null ? '' : v.toLocaleString('pt-BR', {minimumFractionDigits:d, maximumFractionDigits:d});
+  const dt = s => s ? s.split('-').reverse().join('/') : '';
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const NOMES_INDICE = {IPCAE:'IPCA-E', IPCA:'IPCA', TR:'TR', INPC:'INPC', SEM_CORRECAO:'sem correção'};
+  $('#versao').textContent = MotorPC.versao;
+  $('#tabAte').textContent = dt(TABELAS.atualizadoEm);
+
+  // casos de teste locais (pasta bancada/casos, só existe na máquina; nunca vai para o GitHub)
+  fetch('../bancada/casos/').then(r => r.ok ? r.text() : '').then(html => {
+    const nomes = [...html.matchAll(/href="([^"]+\.json)"/g)].map(m => decodeURIComponent(m[1]));
+    for (const n of nomes) { const o = document.createElement('option'); o.value = n; o.textContent = n.replace(/\.json$/,'').replace(/_/g,' '); $('#selCaso').append(o); }
+    const q = new URLSearchParams(location.search).get('caso');
+    const alvo = q && nomes.find(n => n.toLowerCase().includes(q.toLowerCase()));
+    if (alvo) { $('#selCaso').value = alvo; carregar(alvo); }
+  }).catch(() => {});
+  $('#selCaso').addEventListener('change', e => e.target.value && carregar(e.target.value));
+  $('#arq').addEventListener('change', async e => { const f = e.target.files[0]; if (f) mostrar(JSON.parse(await f.text())); });
+
+  async function carregar(nome){ mostrar(await (await fetch('../bancada/casos/' + encodeURIComponent(nome))).json()); }
+
+  // cálculo montado na tela "Novo cálculo" (passado pela sessão do navegador)
+  if (new URLSearchParams(location.search).get('origem') === 'montado') {
+    try { const c = JSON.parse(localStorage.getItem('casoMontado') || 'null'); if (c) setTimeout(() => mostrar(c), 0); } catch (e) {}
+  }
+
+
+  // ---------- cálculo da central (?id=...) ----------
+  const idCentral = new URLSearchParams(location.search).get('id');
+  if (idCentral) abrirCentral(idCentral, +new URLSearchParams(location.search).get('v') || null);
+  async function abrirCentral(id, numero) {
+    const box = $('#centralBox');
+    const u = await CentralPC.eu().catch(() => null);
+    if (!u) { box.innerHTML = '<div class="card">Entre na central para abrir este cálculo: <a href="index.html">fazer login</a>.</div>'; return; }
+    let c, v, vers, docs, evs, revs;
+    try {
+      [c, v, vers, docs, evs, revs] = await Promise.all([CentralPC.calculo(id), CentralPC.versao(id, numero), CentralPC.versoes(id),
+        CentralPC.documentos(id), CentralPC.eventos(id), CentralPC.revisoes(id)]);
+    } catch (e) { box.innerHTML = `<div class="card">Não consegui abrir o cálculo: ${esc(e.message)}</div>`; return; }
+    if (!v) { box.innerHTML = '<div class="card">Este cálculo ainda não tem versão salva.</div>'; return; }
+    document.querySelector('.topo h1').textContent = `${CentralPC.TIPOS[c.tipo] || c.tipo} · ${c.cnj}`;
+    document.querySelector('.topo .acoes').innerHTML = '<a class="btn" href="index.html">Voltar para a lista</a>';
+    v.caso.processo = Object.assign({}, v.caso.processo, { cnj: c.cnj, reclamante: c.reclamante || '', reclamado: c.reclamado || '' });
+    mostrar(v.caso);
+    const ehUltima = v.numero === c.versao_atual, podeRevisar = ['revisor', 'admin'].includes(u.papel);
+    const dh = x => new Date(x).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const acoes = [];
+    if (ehUltima && ['rascunho', 'devolvido'].includes(c.status)) acoes.push('<button class="btn pri" data-st="em_revisao">Enviar para revisão</button>');
+    if (ehUltima && c.status === 'revisado') acoes.push('<button class="btn pri" data-st="entregue">Marcar como entregue</button>');
+    if (c.status !== 'arquivado') acoes.push('<button class="btn" data-st="arquivado">Arquivar</button>');
+    const ultRev = revs[0];
+    box.innerHTML = `<div class="card cent">
+      <div class="linha1"><div><span class="st ${c.status}">${esc(CentralPC.STATUS[c.status] || c.status)}</span>
+        <b style="margin-left:8px">${esc(c.cliente)}</b> · versão ${v.numero}${ehUltima ? '' : ` (a atual é a ${c.versao_atual})`} · responsável ${esc(c.responsavel_nome || '')}${c.revisor_nome ? ` · revisão ${esc(c.revisor_nome)}` : ''}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${acoes.join('')}</div></div>
+      ${ultRev && ultRev.resultado === 'devolvido' && c.status === 'devolvido' ? `<div class="selo parcial"><span>!</span><div><b>Devolvido por ${esc(ultRev.revisor_nome)}</b>${esc(ultRev.comentario || '')}${
+        (ultRev.checklist || []).filter(x => !x.ok).map(x => `<div>• ${esc(x.item)}${x.obs ? ': ' + esc(x.obs) : ''}</div>`).join('')}</div></div>` : ''}
+      <div class="abas">${['Revisão', 'Versões', 'Documentos', 'Histórico'].map((a, i) => `<button data-aba="${i}" class="${i === 0 ? 'on' : ''}">${a}</button>`).join('')}</div>
+      <div data-painel="0">${c.status === 'em_revisao' && ehUltima && podeRevisar ? `
+          <div style="font-size:13px;color:var(--muted);margin-bottom:6px">Marque cada item conferido. Item sem marca precisa de observação para devolver.</div>
+          ${CentralPC.CHECKLIST.map((it, i) => `<div class="chk-item"><input type="checkbox" id="ck${i}"><label for="ck${i}" style="flex:2">${esc(it)}</label><input type="text" id="ob${i}" placeholder="observação"></div>`).join('')}
+          <textarea id="rvCom" placeholder="Comentário da revisão"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px"><button class="btn pri" id="rvOk">Aprovar</button><button class="btn" id="rvDev">Devolver para ajuste</button></div>`
+        : (revs.length ? revs.map(r => `<div style="margin:6px 0"><b>${r.resultado === 'aprovado' ? 'Aprovado' : 'Devolvido'}</b> por ${esc(r.revisor_nome)} em ${dh(r.criado_em)} (versão ${r.versao}): ${(r.checklist || []).filter(x => x.ok).length} de ${(r.checklist || []).length} itens conferidos${r.comentario ? ' · ' + esc(r.comentario) : ''}</div>`).join('')
+          : `<div style="font-size:14px;color:var(--muted)">${c.status === 'em_revisao' ? 'Aguardando revisão.' : 'Ainda não revisado. Envie para revisão quando terminar.'}</div>`)}</div>
+      <div data-painel="1" hidden>${vers.map(x => `<div style="margin:5px 0"><a href="resultado.html?id=${id}&v=${x.numero}">Versão ${x.numero}</a> · ${esc(x.criado_por_nome || '')} · ${dh(x.criado_em)}${x.totais ? ` · líquido ${brl(x.totais.liquido)}` : ''}${x.observacao ? ' · ' + esc(x.observacao) : ''}</div>`).join('')}</div>
+      <div data-painel="2" hidden>${docs.length ? docs.map(d => `<div style="margin:5px 0"><button class="lnk" data-doc="${esc(d.storage_path)}">${esc(d.nome)}</button> <span style="color:var(--muted);font-size:12px">${esc(d.tipo || '')}</span></div>`).join('') : '<div style="color:var(--muted)">Nenhum documento.</div>'}</div>
+      <div data-painel="3" hidden>${evs.map(e => `<div style="margin:4px 0;font-size:14px">${dh(e.criado_em)} · <b>${esc(e.usuario_nome || '')}</b> · ${esc({ criado: 'criou o cálculo', nova_versao: 'salvou', em_revisao: 'enviou para revisão', aprovado: 'aprovou', devolvido: 'devolveu para ajuste', entregue: 'marcou como entregue', arquivado: 'arquivou' }[e.acao] || e.acao)}${e.detalhe ? ' · ' + esc(e.detalhe) : ''}</div>`).join('')}</div>
+      <div class="msg" id="cMsg"></div></div>`;
+    box.querySelectorAll('[data-aba]').forEach(b => b.onclick = () => {
+      box.querySelectorAll('[data-aba]').forEach(x => x.classList.toggle('on', x === b));
+      box.querySelectorAll('[data-painel]').forEach(pn => { pn.hidden = pn.dataset.painel !== b.dataset.aba; });
+    });
+    box.querySelectorAll('[data-doc]').forEach(b => b.onclick = async () => { try { window.open(await CentralPC.linkDocumento(b.dataset.doc), '_blank'); } catch (e) { $('#cMsg').textContent = e.message; } });
+    box.querySelectorAll('[data-st]').forEach(b => b.onclick = async () => {
+      if (b.dataset.st === 'arquivado' && !confirm('Arquivar este cálculo? Ele sai da lista, mas continua guardado com todas as versões.')) return;
+      try { await CentralPC.status(id, b.dataset.st); abrirCentral(id, null); } catch (e) { $('#cMsg').textContent = 'Não consegui: ' + e.message; }
+    });
+    const revisar = async res => {
+      const lista = CentralPC.CHECKLIST.map((it, i) => ({ item: it, ok: $('#ck' + i).checked, obs: $('#ob' + i).value.trim() }));
+      if (res === 'aprovado' && lista.some(x => !x.ok)) { $('#cMsg').textContent = 'Para aprovar, todos os itens precisam estar conferidos.'; return; }
+      if (res === 'devolvido' && !lista.some(x => !x.ok && x.obs) && !$('#rvCom').value.trim()) { $('#cMsg').textContent = 'Para devolver, diga o que ajustar (observação no item ou comentário).'; return; }
+      try { await CentralPC.revisar(id, v.numero, lista, res, $('#rvCom').value.trim()); abrirCentral(id, null); } catch (e) { $('#cMsg').textContent = 'Não consegui: ' + e.message; }
+    };
+    if ($('#rvOk')) { $('#rvOk').onclick = () => revisar('aprovado'); $('#rvDev').onclick = () => revisar('devolvido'); }
+  }
+
+  // compara com o contador (quando o caso veio de um PJC)
+  function conferir(v, calc){
+    const esp = (v.esperado || []).filter(o => o.ativo);
+    if (!esp.length) return null;
+    const usados = new Set(); let ok = 0; const errados = new Set();
+    for (const e of esp) {
+      const i = calc.ocorrencias.findIndex((o, k) => !usados.has(k) && o.ini === e.ini && (!e.aquisitivoIni || o.aquisitivoIni === e.aquisitivoIni));
+      if (i < 0) continue; usados.add(i);
+      const o = calc.ocorrencias[i];
+      if (Math.abs(o.devido - (e.devido || 0)) <= 0.011 && Math.abs(o.pago - (e.pago || 0)) <= 0.011) ok++; else errados.add(i);
+    }
+    return {ok, n: esp.length, errados};
+  }
+
+  function mostrar(caso){
+    const p = caso.parametros, ct = p.contrato, at = p.atualizacao;
+    const r = MotorPC.calcular(caso, TABELAS), t = r.totais;
+    const ativas = r.verbas.filter(v => v.ativa && v.ocorrencias.some(o => o.devido || o.pago));
+    let okT = 0, nT = 0;
+    const conf = {};
+    for (const v of ativas) { const pv = p.verbas.find(x => x.id === v.id); const c = conferir(pv, v); conf[v.id] = c; if (c) { okT += c.ok; nT += c.n; } }
+    // totais finais contra o resumo do contador
+    const esp = (caso.esperado || {}).totais || {};
+    const pares = [['Líquido', 'valorPrincipal', 'liquido'], ['FGTS', 'fgtsDepositoContaVinculada', 'fgts'], ['INSS reclamante', 'inssReclamante', 'inssReclamante'],
+                   ['INSS reclamado', 'inssReclamado', 'inssReclamado'], ['Imposto de renda', 'impostoRenda', 'impostoRenda']];
+    const totConf = pares.filter(([, k]) => esp[k] != null && esp[k] !== 'null').map(([n, k, m]) => ({ n, ok: Math.abs(+esp[k] - (t[m] || 0)) <= 0.011, esp: +esp[k], meu: t[m] || 0 }));
+    const totOk = totConf.length && totConf.every(x => x.ok);
+    const indice = at.combinarIndice && at.aPartirOutroIndice
+      ? `${NOMES_INDICE[at.indice] || at.indice} até ${dt(MotorPC_diaAntes(at.aPartirOutroIndice))} e ${NOMES_INDICE[at.outroIndice] || at.outroIndice} a partir de ${dt(at.aPartirOutroIndice)}`
+      : (NOMES_INDICE[at.indice] || at.indice);
+    let selo = '';
+    if (nT) {
+      if (okT === nT && totOk) selo = `<div class="selo"><span>✔</span><div><b>Conferido com o cálculo do contador</b>As ${nT} ocorrências, os índices de correção, os juros e os totais (líquido, FGTS, INSS e imposto de renda) são iguais aos do PJC do contador, centavo a centavo.</div></div>`;
+      else selo = `<div class="selo parcial"><span>!</span><div><b>${okT} de ${nT} ocorrências iguais ao cálculo do contador</b>${totConf.filter(x => !x.ok).map(x => `${x.n}: ${brl(x.meu)} aqui e ${brl(x.esp)} no contador`).join(' · ') || 'Os totais conferem.'} As linhas diferentes aparecem destacadas no demonstrativo de cada verba.</div></div>`;
+    }
+
+    const linhas = ativas.map(v => {
+      const c = conf[v.id];
+      const chip = !c ? '<span class="chk na">sem referência</span>' : c.ok === c.n ? '<span class="chk ok">igual ao contador</span>' : `<span class="chk dif">${c.ok}/${c.n}</span>`;
+      return `<tr class="verba" data-id="${v.id}"><td><span class="seta">›</span> ${esc(v.nome)}<div class="tipo">${{Calculada:'verba principal',Reflexo:'reflexo',Informada:'valor informado'}[v.tipo]} · ${v.ocorrencias.length} ocorrência(s)</div></td>
+        <td class="n esc">${brl(v.devido - v.pago)}</td><td class="n">${brl(v.corrigido)}</td><td class="n esc">${brl(v.juros)}</td><td class="n">${brl(v.corrigido + (v.juros || 0))}</td><td class="esc">${chip}</td></tr>
+        <tr class="det" data-det="${v.id}" hidden><td colspan="6"></td></tr>`;
+    }).join('');
+    const fg = r.fgts;
+    const fgCorr = fg ? fg.corrigido + (fg.multa ? fg.multa.corrigido : 0) : 0;
+    const linhaFgts = fg ? `<tr><td>FGTS ${fg.linhas.length ? '8%' : ''}<div class="tipo">${fg.linhas.length} competência(s)</div></td><td class="n esc"></td><td class="n">${brl(fg.corrigido)}</td><td class="n esc">${brl(fg.juros)}</td><td class="n">${brl(fg.corrigido + fg.juros)}</td><td class="esc"></td></tr>
+      ${fg.multa ? `<tr><td>Multa de ${fg.multa.pct}% sobre o FGTS</td><td class="n esc"></td><td class="n">${brl(fg.multa.corrigido)}</td><td class="n esc">${brl(fg.multa.juros)}</td><td class="n">${brl(fg.multa.corrigido + fg.multa.juros)}</td><td class="esc"></td></tr>` : ''}` : '';
+
+    const honor = r.honorarios.filter(h => h.devedor !== 'RECLAMANTE');
+    const nomeH = s => s.charAt(0) + s.slice(1).toLowerCase();
+    const resumo = `
+      <div class="grid2">
+        <div class="card"><h2>Crédito do reclamante</h2>
+          <table class="tbl res"><tbody>
+            <tr><td>Verbas corrigidas</td><td class="n">${brl(t.corrigido)}</td></tr>
+            <tr><td>Juros sobre as verbas</td><td class="n">${brl(t.jurosVerbas)}</td></tr>
+            ${fg ? `<tr><td>FGTS e multa (corrigidos, com juros)</td><td class="n">${brl(t.fgts)}</td></tr>` : ''}
+            <tr class="sub"><td>Bruto devido ao reclamante</td><td class="n">${brl(t.bruto)}</td></tr>
+            ${t.depositoFgts ? `<tr><td>FGTS a depositar na conta vinculada</td><td class="n neg">(${brl(t.depositoFgts)})</td></tr>` : ''}
+            <tr><td>Contribuição previdenciária do reclamante</td><td class="n neg">(${brl(t.deducaoInss)})</td></tr>
+            <tr><td>Imposto de renda</td><td class="n neg">(${brl(t.impostoRenda)})</td></tr>
+            <tr class="tot"><td>Líquido devido ao reclamante</td><td class="n">${brl(t.liquido)}</td></tr>
+          </tbody></table></div>
+        <div class="card"><h2>Débitos do reclamado</h2>
+          <table class="tbl res"><tbody>
+            <tr><td>Líquido devido ao reclamante</td><td class="n">${brl(t.liquido)}</td></tr>
+            ${t.depositoFgts ? `<tr><td>Depósito de FGTS</td><td class="n">${brl(t.depositoFgts)}</td></tr>` : ''}
+            <tr><td>INSS do reclamante (com juros SELIC)</td><td class="n">${brl(t.inssReclamante)}</td></tr>
+            <tr><td>INSS do reclamado, empresa e SAT (com juros SELIC)</td><td class="n">${brl(t.inssReclamado)}</td></tr>
+            ${t.impostoRenda ? `<tr><td>Imposto de renda retido</td><td class="n">${brl(t.impostoRenda)}</td></tr>` : ''}
+            ${honor.map(h => `<tr><td>${esc(nomeH(h.descricao))}${h.aliquota ? ` (${num(h.aliquota, 0)}% sobre ${brl(h.base)})` : ''}</td><td class="n">${brl(h.valor)}</td></tr>`).join('')}
+            ${t.custas ? `<tr><td>Custas judiciais</td><td class="n">${brl(t.custas)}</td></tr>` : ''}
+            <tr class="tot"><td>Total devido pelo reclamado</td><td class="n">${brl(t.totalReclamado)}</td></tr>
+          </tbody></table></div>
+      </div>`;
+
+    // valor na data da distribuição (ajuizamento): correção até lá e só os juros pré-judiciais
+    const pd = MotorPC.posicaoNaDistribuicao(caso, TABELAS);
+    const posicao = !pd ? '' : `
+      <div class="card" style="margin-top:16px"><h2>Valor na data da distribuição <small>${dt(pd.data)} · corrigido até o ajuizamento, com os juros da fase pré-judicial (TRD)</small></h2>
+        <div class="grid2">
+          <table class="tbl res"><tbody>
+            <tr><td>Verbas corrigidas</td><td class="n">${brl(pd.corrigido)}</td></tr>
+            <tr><td>Juros pré-judiciais (TRD)</td><td class="n">${brl(pd.juros)}</td></tr>
+            ${pd.fgts ? `<tr><td>FGTS e multa</td><td class="n">${brl(pd.fgts)}</td></tr>` : ''}
+            <tr class="tot"><td>Valor bruto na distribuição</td><td class="n">${brl(pd.total)}</td></tr>
+            ${pd.posterior ? `<tr><td>Parcelas que vencem a partir do ajuizamento <div class="tipo">não existiam na distribuição; valor nominal, fora do total</div></td><td class="n">${brl(pd.posterior)}</td></tr>` : ''}
+          </tbody></table>
+          <div class="scroll"><table class="tbl"><thead><tr><th>Verba</th><th class="n">Na distribuição</th>${pd.posterior ? '<th class="n">Depois (nominal)</th>' : ''}</tr></thead>
+            <tbody>${pd.verbas.map(v => `<tr><td>${esc(v.nome)}</td><td class="n">${brl(v.corrigido)}</td>${pd.posterior ? `<td class="n">${v.posterior ? brl(v.posterior) : ''}</td>` : ''}</tr>`).join('')}</tbody></table></div>
+        </div>
+        ${pd.total < 0 || pd.posterior > Math.abs(pd.total) ? `<div class="selo parcial" style="margin:10px 0 0"><span>!</span><div><b>Valor na distribuição pouco representativo neste caso</b>A maior parte da condenação vence depois do ajuizamento (salários de reintegração, indenizações arbitradas na sentença), e os valores já pagos ou deduzidos vencem antes. Use o valor da liquidação.</div></div>` : ''}
+        <p style="font-size:12px;margin:8px 0 0;color:var(--muted)">Valores brutos, antes de INSS e imposto de renda. Úteis para comparar com o valor da causa e para provisão. Conferido com o PJe-Calc liquidando na data do ajuizamento (Reinaldo: líquido igual centavo a centavo).</p>
+      </div>`;
+
+    const det = (titulo, sub, cab, linhasHtml) => `<details class="card bloco"><summary><h2>${titulo} <small>${sub}</small></h2></summary><div class="wrap scroll"><table class="mini"><thead><tr>${cab.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${linhasHtml}</tbody></table></div></details>`;
+    const mesAno = c => `${c.slice(5)}/${c.slice(0, 4)}`;
+    const blocos = [
+      det('Juros de mora', `TRD até ${dt(MotorPC_diaAntes(ct.ajuizamento))} e taxa legal a partir de ${dt(ct.ajuizamento)}, depois de deduzir o INSS do reclamante`,
+        ['Vencimento', 'Verbas corrigidas', 'INSS reclamante', 'Capital', 'Taxa', 'Juros'],
+        r.juros.map(j => `<tr><td>${dt(j.venc)}</td><td>${num(j.totalVerbas)}</td><td>${num(j.contribuicao)}</td><td>${num(j.capital)}</td><td>${num(j.taxa, 4)}%</td><td>${num(j.juros)}</td></tr>`).join('')),
+      fg ? det('FGTS', `${fg.linhas.length} competências${fg.multa ? ` e multa de ${fg.multa.pct}% (base ${brl(fg.multa.base)}, corrigida até a demissão)` : ''}`,
+        ['Competência', 'Base', 'Devido', 'Índice', 'Corrigido', 'Juros'],
+        fg.linhas.map(l => `<tr><td>${mesAno(l.comp)}</td><td>${num(l.base)}</td><td>${num(l.devido)}</td><td>${num(l.indice, 7)}</td><td>${num(l.corrigido)}</td><td>${num(l.juros)}</td></tr>`).join('')) : '',
+      det('Contribuição previdenciária', 'por competência, com juros SELIC', ['Competência', 'Base', 'Alíq. segurado', 'Segurado', 'Empresa', 'SAT', 'Taxa SELIC', 'Juros'],
+        r.inss.map(l => `<tr><td>${mesAno(l.comp)}${l.eh13 ? ' 13º' : ''}</td><td>${num(l.base)}</td><td>${num(l.aliquotaSegurado)}%</td><td>${num(l.segurado)}</td><td>${num(l.empresa)}</td><td>${num(l.sat)}</td><td>${num(l.taxaSelic)}%</td><td>${num(l.juros_segurado + l.juros_empresa + l.juros_sat + l.juros_terceiros)}</td></tr>`).join('')),
+      (p.apuracoesCartao || []).length ? (() => {
+        const tm = MotorPC.totaisMensais(caso, TABELAS), ms = Object.keys(tm).sort();
+        const nBat = p.apuracoesCartao.reduce((s, a) => s + Object.keys(a.batidas || {}).length, 0);
+        const forma = { HORAS_EXTRAS_PELO_CRITERIO_MAIS_FAVORAVEL: 'critério mais favorável (diário ou semanal)', HORAS_EXTRAS_EXCEDENTES_DA_JORNADA_DIARIA: 'excedentes da jornada diária', NAO_APURAR_HORAS_EXTRAS: 'sem apuração de horas extras' }[p.apuracoesCartao[0].config.formaDeApuracaoCartao] || '';
+        return det('Cartão de ponto', `${nBat} dias de batidas apurados pelo motor; horas extras pelo ${forma}; hora noturna com redução ficta`,
+          ['Mês', 'Dias', 'Trabalhadas', 'Extras', 'Noturnas', 'Domingos', 'Feriados'],
+          ms.map(m => { const t = tm[m]; return `<tr><td>${mesAno(m)}</td><td>${num(t.dias, 0)}</td><td>${num(t.horasTrabalhadas)}</td><td>${num((t.horasExtrasDiaria || 0) + (t.horasExtrasSemanal || 0))}</td><td>${num(t.noturnasMes)}</td><td>${num(t.horasDomingo)}</td><td>${num(t.horasFeriado)}</td></tr>`; }).join(''));
+      })() : '',
+      det('Imposto de renda', 'rendimentos recebidos acumuladamente; juros de mora não tributados', ['Período', 'Rendimentos', 'Meses', 'INSS', 'Desc. simplificado', 'Base', 'Imposto'],
+        (r.irpf.blocos || []).map(b => `<tr><td>${b.bloco}</td><td>${num(b.verbas)}</td><td>${b.meses}</td><td>${num(b.contribuicao)}</td><td>${num(b.simplificado)}</td><td>${num(b.base)}</td><td>${num(b.imposto)}</td></tr>`).join('') || '<tr><td colspan="7">Não apurado neste cálculo</td></tr>'),
+    ].join('');
+
+    $('#conteudo').innerHTML = `
+      <section class="hero">
+        <div class="proc"><div class="k">Reclamação trabalhista</div><div class="nome">${esc(caso.processo.reclamante)}</div>
+          <div class="cnj">${esc(caso.processo.cnj || '')} · ${esc(caso.processo.reclamado || '')}</div></div>
+        <div class="kpi"><div class="k">Líquido ao reclamante</div><div class="v">${brl(t.liquido)}</div><div class="s">em ${dt(ct.liquidacao)}</div></div>
+        <div class="kpi"><div class="k">FGTS, INSS e IR</div><div class="v">${brl(t.inssReclamante + t.inssReclamado + t.fgts + t.impostoRenda)}</div><div class="s">encargos</div></div>
+        <div class="kpi"><div class="k">Total do reclamado</div><div class="v">${brl(t.totalReclamado)}</div><div class="s">com honorários e custas</div></div>
+      </section>
+      <div class="saidas"><button class="btn pri" type="button" id="btnPdf">Baixar PDF</button><button class="btn" type="button" id="btnXlsx">Baixar Excel</button>${idCentral ? '' : '<button class="btn" type="button" id="btnCentral">Salvar na central</button>'}
+        <span>PDF: o relatório abre na janela de impressão; escolha "Salvar como PDF".</span></div>
+      ${selo}
+      ${resumo}
+      ${posicao}
+      <div class="card acordo" style="margin-top:16px"><h2>Simular acordo <small>discriminação das verbas pelo peso de cada uma neste cálculo (modelo do contador)</small></h2>
+        <div class="campos">
+          <label>Valor líquido do acordo (R$)<input id="acLiq" placeholder="ex.: 50000"></label>
+          <label>Honorários (% do líquido)<input id="acHon" value="10"></label>
+          <label>Período de (mês)<input id="acIni" type="month"></label>
+          <label>até (mês)<input id="acFim" type="month"></label>
+          <label>Data do pagamento<input id="acPag" type="date"></label>
+          <label>SELIC até (último mês publicado)<input id="acSelic" type="month"></label>
+        </div>
+        <div class="saidas" style="margin-top:4px"><button class="btn pri" type="button" id="acCalc">Calcular acordo</button><button class="btn" type="button" id="acPdf" disabled>Baixar PDF da discriminação</button></div>
+        <div id="acRes" style="margin-top:10px"></div>
+      </div>
+      <div class="card" style="margin-top:16px"><h2>Verbas <small>clique em uma verba para ver o demonstrativo mês a mês</small></h2>
+        <div class="scroll"><table class="tbl">
+          <thead><tr><th>Verba</th><th class="n esc">Diferença</th><th class="n">Corrigido</th><th class="n esc">Juros</th><th class="n">Total</th><th class="esc">Conferência</th></tr></thead>
+          <tbody>${linhas}${linhaFgts}
+            <tr class="tot"><td>Bruto devido ao reclamante</td><td class="n esc"></td><td class="n">${brl(t.corrigido + fgCorr)}</td><td class="n esc">${brl(t.bruto - t.corrigido - fgCorr)}</td><td class="n">${brl(t.bruto)}</td><td class="esc"></td></tr>
+          </tbody></table></div>
+      </div>
+      <div class="grid2" style="margin-top:16px">
+        <div class="card"><h2>Parâmetros do cálculo</h2>
+          <dl class="par">
+            <dt>Admissão</dt><dd>${dt(ct.admissao)}</dd>
+            <dt>Demissão</dt><dd>${dt(ct.demissao)}</dd>
+            <dt>Aviso prévio</dt><dd>${r.diasAviso} dias${ct.projetaAviso ? ` (projeção até ${dt(r.fimProjetado)})` : ''}</dd>
+            <dt>Ajuizamento</dt><dd>${dt(ct.ajuizamento)}</dd>
+            <dt>Liquidação</dt><dd>${dt(ct.liquidacao)}</dd>
+            <dt>Correção</dt><dd>${indice}</dd>
+            <dt>Juros</dt><dd>TRD simples até o ajuizamento e taxa legal depois (ADC 58 e Lei 14.905/2024)</dd>
+            <dt>Férias</dt><dd>${p.ferias.map(f => `${f.relativa} ${f.situacao.toLowerCase()}`).join(' · ') || 'nenhuma informada'}</dd>
+            <dt>Faltas</dt><dd>${p.faltas.length ? p.faltas.map(f => `${dt(f.ini)} a ${dt(f.fim)}${f.justificada ? ' (justificada)' : ''}`).join(' · ') : 'nenhuma'}</dd>
+          </dl></div>
+        <div class="card"><h2>Observações do motor</h2>
+          <ul class="pend">
+            <li>Imposto de renda pela regra de rendimentos recebidos acumuladamente, com a redução da Lei 15.270/2025 a partir de 2026. Ainda não conferido em um caso com imposto devido.</li>
+            ${r.avisos.length ? `<li>${r.avisos.length} regra(s) ainda não implementada(s) neste caso, em verbas inativas ou fora do cálculo.</li>` : '<li>Todas as verbas deste caso usam regras já implementadas.</li>'}
+          </ul></div>
+      </div>
+      ${blocos}`;
+
+    document.getElementById('btnPdf').onclick = () => SaidasPC.abrirPdf(caso, r, pd);
+    document.getElementById('btnXlsx').onclick = () => SaidasPC.baixarExcel(caso, r);
+
+    // salvar na central um cálculo aberto fora dela (caso local ou montado)
+    const bC = document.getElementById('btnCentral');
+    if (bC) bC.onclick = () => {
+      const box = document.getElementById('salvarCentral') || (() => { const d = document.createElement('div'); d.id = 'salvarCentral'; d.className = 'card acordo'; d.style.marginTop = '12px'; bC.closest('.saidas').after(d); return d; })();
+      box.innerHTML = `<div class="campos">
+          <label>Processo<input id="scCnj" value="${esc(caso.processo.cnj || '')}"></label>
+          <label>Cliente<input id="scCli" list="scClis" placeholder="ex.: Bridgestone"></label>
+          <label>Tipo de cálculo<select id="scTipo" style="width:100%">${Object.entries(CentralPC.TIPOS).map(([k, v]) => `<option value="${k}" ${k === 'liquidacao' ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+          <label>Reclamante<input id="scRte" value="${esc(caso.processo.reclamante || '')}"></label>
+          <label>Reclamado<input id="scRdo" value="${esc(caso.processo.reclamado || '')}"></label></div>
+        <datalist id="scClis"><option>Bridgestone</option><option>CBC</option></datalist>
+        <button class="btn pri" type="button" id="scOk">Salvar</button> <span id="scMsg" style="font-size:13px"></span>`;
+      document.getElementById('scOk').onclick = async () => {
+        const msg = t => { document.getElementById('scMsg').innerHTML = t; };
+        const u = await CentralPC.eu().catch(() => null);
+        if (!u || u.semCadastro) { msg('Entre na central primeiro: <a href="index.html" target="_blank">fazer login</a>.'); return; }
+        const cnj = document.getElementById('scCnj').value.trim(), cli = document.getElementById('scCli').value.trim();
+        if (!cnj || !cli) { msg('Informe o processo e o cliente.'); return; }
+        try {
+          const res = await CentralPC.salvar({ cnj, cliente: cli, tipo: document.getElementById('scTipo').value,
+            reclamante: document.getElementById('scRte').value.trim(), reclamado: document.getElementById('scRdo').value.trim(),
+            data_liquidacao: ct.liquidacao, caso, totais: r.totais, motor: MotorPC.versao });
+          msg(`Salvo na central, versão ${res.versao}. <a href="resultado.html?id=${res.id}">Abrir pela central</a>`);
+        } catch (e) { msg('Não consegui salvar: ' + esc(e.message)); }
+      };
+    };
+
+    // ---------- acordo ----------
+    const ultSelic = Object.values(TABELAS.selicInss).map(x => x[1]).sort().pop();
+    document.getElementById('acIni').value = (ct.admissao || '').slice(0, 7);
+    document.getElementById('acFim').value = (ct.demissao || '').slice(0, 7);
+    document.getElementById('acSelic').value = ultSelic;
+    let ultimoAcordo = null;
+    document.getElementById('acCalc').onclick = () => {
+      const v = id => document.getElementById(id).value, n = x => +String(x || '').replace(/\./g, '').replace(',', '.') || 0;
+      const liq = n(v('acLiq'));
+      if (!liq || !v('acIni') || !v('acFim') || !v('acPag') || !v('acSelic')) { document.getElementById('acRes').innerHTML = '<p style="color:var(--muted)">Preencha o valor líquido, o período, a data do pagamento e o mês da SELIC.</p>'; return; }
+      const itens = AcordoPC.percentuaisDoCalculo(caso, r);
+      const a = AcordoPC.calcular(TABELAS, { liquido: liq, itens, periodo: { ini: v('acIni') + '-01', fim: v('acFim') + '-28' }, pagamento: v('acPag'), selicAte: v('acSelic'), honorariosPct: n(v('acHon')) });
+      ultimoAcordo = a; document.getElementById('acPdf').disabled = false;
+      document.getElementById('acRes').innerHTML = `<div class="grid2" style="margin-top:0">
+        <table class="tbl res"><tbody>
+          <tr><td>Parcelas do acordo sem FGTS e multa (líquidas)</td><td class="n">${brl(a.liquidoConferido - a.valorFgts - a.valorMulta)}</td></tr>
+          <tr><td>FGTS</td><td class="n">${brl(a.valorFgts)}</td></tr><tr><td>Multa de 40% do FGTS</td><td class="n">${brl(a.valorMulta)}</td></tr>
+          <tr class="sub"><td>Valor bruto</td><td class="n">${brl(a.bruto)}</td></tr>
+          <tr><td>INSS do reclamante</td><td class="n neg">(${brl(a.inssReclamante)})</td></tr><tr><td>Imposto de renda</td><td class="n neg">(${brl(a.ir)})</td></tr>
+          <tr class="tot"><td>Valor líquido</td><td class="n">${brl(a.liquidoConferido)}</td></tr>
+          <tr><td>INSS da empresa (empresa, SAT e terceiros)</td><td class="n">${brl(a.inssEmpresa)}</td></tr>
+          <tr><td>Juros SELIC do INSS</td><td class="n">${brl(a.selic)}</td></tr><tr><td>Honorários advocatícios</td><td class="n">${brl(a.honorarios)}</td></tr>
+          <tr class="tot"><td>Custo total do acordo</td><td class="n">${brl(a.custoTotal)}</td></tr></tbody></table>
+        <div class="scroll"><table class="tbl"><thead><tr><th>Verba</th><th>Natureza</th><th class="n">%</th><th class="n">Valor</th></tr></thead><tbody>
+          ${a.linhas.map(l => `<tr><td>${esc(l.nome)}</td><td>${l.natureza === 'salarial' ? 'Salarial' : 'Indenizatória'}</td><td class="n">${num(l.pct * 100)}%</td><td class="n">${brl(l.valor)}</td></tr>`).join('')}
+        </tbody></table></div></div>
+        <p style="font-size:12px;color:var(--muted);margin:8px 0 0">INSS sobre ${brl(a.baseInss)} de verbas salariais, repartidas em ${a.competencias} competências (${brl(a.baseInss / a.competencias)} por mês). IR pelos rendimentos acumulados: ${brl(a.irMensal)} por mês. ${esc(a.regraSelic)}.</p>`;
+    };
+    document.getElementById('acPdf').onclick = () => ultimoAcordo && SaidasPC.abrirPdfAcordo(caso, ultimoAcordo);
+    document.querySelectorAll('tr.verba').forEach(tr => tr.addEventListener('click', () => {
+      const id = tr.dataset.id, det = document.querySelector(`tr[data-det="${id}"]`);
+      const abrir = det.hidden; det.hidden = !abrir; tr.classList.toggle('aberta', abrir);
+      if (abrir && !det.dataset.ok) {
+        const v = ativas.find(x => x.id === id), errados = (conf[id] || {}).errados || new Set();
+        det.firstElementChild.innerHTML = `<div class="wrap"><table class="mini"><thead><tr><th>Período</th><th>Base</th><th>Mult.</th><th>Divisor</th><th>Qtd.</th><th>Devido</th><th>Pago</th><th>Índice</th><th>Corrigido</th><th>Juros</th></tr></thead><tbody>${
+          v.ocorrencias.map((o, i) => `<tr class="${errados.has(i) ? 'x' : ''}"><td>${dt(o.ini)}${o.fim && o.fim !== o.ini ? ' a ' + dt(o.fim) : ''}${o.origem === 'informado' ? '<span class="inf">informado</span>' : ''}</td>
+            <td>${num(o.base)}</td><td>${num(o.mult, 4)}</td><td>${num(o.divisor, 0)}</td><td>${num(o.qtd, o.qtd % 1 ? 2 : 0)}</td>
+            <td>${num(o.devido)}</td><td>${num(o.pago)}</td><td>${num(o.indice, 7)}</td><td>${num(o.corrigido)}</td><td>${num(o.juros || 0)}</td></tr>`).join('')
+        }</tbody></table></div>`;
+        det.dataset.ok = 1;
+      }
+    }));
+  }
+  function MotorPC_diaAntes(s){ const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); }
+})();
+</script>
+</body>
+</html>
