@@ -234,7 +234,7 @@ async function iniciar() {
   $('#navEquipe').hidden = u.papel !== 'admin';
   const h = new Date().getHours(); $('#ola').textContent = `${h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}, ${u.nome.split(' ')[0]}`;
   $('#olaSub').textContent = `Cálculos da equipe ${u.papel === 'admin' ? '(todas as equipes)' : u.equipe}: liquidação, impugnação, provisão e acordo, com revisão e histórico.`;
-  $('#bDemo').hidden = !(u.papel === 'admin' && /^(localhost|127\.0\.0\.1)$/.test(location.hostname));
+  $('#bDemo').hidden = u.papel !== 'admin';
   await carregar();
 }
 async function carregar() {
@@ -348,18 +348,23 @@ function tipoDe(nome) {
 }
 $('#bDemo').onclick = async () => {
   const msg = t => { $('#demoMsg').textContent = t; };
-  let nomes;
-  try { nomes = [...(await (await fetch('../bancada/casos/')).text()).matchAll(/href="([^"]+\.json)"/g)].map(m => decodeURIComponent(m[1])); }
-  catch (e) { msg('A pasta da bancada não está disponível neste computador.'); return; }
+  // no computador da Controladoria lê a pasta da bancada; no site publicado, a administração escolhe os arquivos
+  let nomes = [], arquivos = {};
+  try { const r = await fetch('../bancada/casos/'); if (r.ok) nomes = [...(await r.text()).matchAll(/href="([^"]+\.json)"/g)].map(m => decodeURIComponent(m[1])); } catch (e) {}
+  if (!nomes.length) {
+    const fs = await new Promise(ok => { const i = document.createElement('input'); i.type = 'file'; i.accept = '.json'; i.multiple = true; i.onchange = () => ok([...i.files]); i.click(); });
+    if (!fs.length) return;
+    for (const f of fs) { arquivos[f.name] = f; nomes.push(f.name); }
+  }
   if (!confirm(`Salvar ${nomes.length} casos de teste na central (os cálculos do contador conferidos na bancada)? Casos já salvos são pulados.`)) return;
   $('#bDemo').disabled = true;
   try {
-    if (!window.MotorPC) { msg('Carregando o motor…'); await carregaScript('motor/tabelas.js'); await carregaScript('motor/motor.js'); }
+    if (!window.MotorPC) { msg('Carregando o motor…'); const pasta = /\/site\//.test(location.pathname) ? 'motor/' : 'motor/'; await carregaScript(pasta + 'tabelas.js'); await carregaScript(pasta + 'motor.js'); }
     const ja = new Set(todos.map(c => c.cnj)); let ok = 0, pulados = 0, falhas = [];
     for (const [i, nome] of nomes.entries()) {
       msg(`Salvando ${i + 1} de ${nomes.length}…`);
       try {
-        const caso = await (await fetch('../bancada/casos/' + encodeURIComponent(nome))).json();
+        const caso = arquivos[nome] ? JSON.parse(await arquivos[nome].text()) : await (await fetch('../bancada/casos/' + encodeURIComponent(nome))).json();
         const cnj = (caso.processo || {}).cnj || (nome.match(/\d{7}-\d{2}\.\d{4}\.5\.02\.\d{4}/) || [])[0];
         if (!cnj || ja.has(cnj)) { pulados++; continue; }
         const ct = caso.parametros.contrato;
