@@ -447,7 +447,7 @@ function tipoDe(nome) {
 $('#bDemo').onclick = () => carregarPiloto(null);
 $('#bImportar').onclick = () => carregarPiloto(null);
 async function carregarPiloto(soltos) {
-  const msg = t => { $('#demoMsg').textContent = t; const c = $('#dropPiloto'); if (c) { let el = c.querySelector('.andamento'); if (!el) { el = document.createElement('div'); el.className = 'andamento'; el.style.cssText = 'margin-top:12px;font-weight:700;color:#075985'; c.appendChild(el); } el.textContent = t; } };
+  const msg = t => { $('#demoMsg').textContent = t; if (!$('#telaEquipe').hidden) { $('#eMsg').style.color = '#075985'; $('#eMsg').textContent = t; } const c = $('#dropPiloto'); if (c) { let el = c.querySelector('.andamento'); if (!el) { el = document.createElement('div'); el.className = 'andamento'; el.style.cssText = 'margin-top:12px;font-weight:700;color:#075985'; c.appendChild(el); } el.textContent = t; } };
   // no computador da Controladoria lê a pasta da bancada; no site publicado, a administração escolhe os arquivos
   // cada item: { nome, ler() } (arquivos com o mesmo nome em pastas diferentes não se misturam)
   let itens = [];
