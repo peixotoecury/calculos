@@ -460,13 +460,14 @@ async function carregarPiloto(soltos) {
   $('#bDemo').disabled = true;
   try {
     if (!window.MotorPC) { msg('Carregando o motor…'); const pasta = /\/site\//.test(location.pathname) ? 'motor/' : 'motor/'; await carregaScript(pasta + 'tabelas.js'); await carregaScript(pasta + 'motor.js'); }
-    const ja = new Set(todos.map(c => c.cnj)); let ok = 0, pulados = 0, falhas = [];
+    const ja = new Set(todos.map(c => c.cnj)); let ok = 0, pulados = 0, falhas = [], jaLista = [];
     for (const [i, nome] of nomes.entries()) {
       msg(`Salvando ${i + 1} de ${nomes.length}…`);
       try {
         const caso = arquivos[nome] ? JSON.parse(await arquivos[nome].text()) : await (await fetch('../bancada/casos/' + encodeURIComponent(nome))).json();
         const cnj = (caso.processo || {}).cnj || (nome.match(/\d{7}-\d{2}\.\d{4}\.5\.02\.\d{4}/) || [])[0];
-        if (!cnj || ja.has(cnj)) { pulados++; continue; }
+        if (!cnj) { falhas.push(nome.slice(0, 40) + ': sem número de processo'); continue; }
+        if (ja.has(cnj)) { pulados++; jaLista.push(cnj); continue; }
         const ct = caso.parametros.contrato;
         const op = { tabelasAte: ct.dataCriacao || null, indiceAte: (caso.parametros.atualizacao || {}).ultimoIndice || null };
         const r = MotorPC.calcular(JSON.parse(JSON.stringify(caso)), TABELAS, op);
@@ -477,7 +478,7 @@ async function carregarPiloto(soltos) {
         ja.add(cnj); ok++;
       } catch (e) { falhas.push(nome.slice(0, 40) + ': ' + e.message); }
     }
-    msg(`${ok} caso(s) de teste salvos${pulados ? `, ${pulados} já existiam` : ''}.${falhas.length ? ' Falharam: ' + falhas.join('; ') : ''}`);
+    msg(`${nomes.length} arquivo(s) recebido(s): ${ok} salvo(s)${pulados ? `, ${pulados} já estavam na central (${jaLista.join(', ')})` : ''}.${falhas.length ? ' Não salvos: ' + falhas.join('; ') : ''}`);
     await carregar(); desenharAtividade();
   } finally { $('#bDemo').disabled = false; }
 }
