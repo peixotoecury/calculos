@@ -214,7 +214,7 @@ input,select,.btn{font:inherit;border:1px solid var(--line);background:#fff;colo
   </aside>
   <main>
     <div class="boasvindas"><h1 id="ola">Cálculos da equipe</h1><p id="olaSub">Liquidação, impugnação, provisão e acordo, com revisão e histórico.</p>
-      <div class="acoes"><button class="btn" id="bDemo" hidden>Carregar casos de teste</button><a class="btn pri" href="novo.html">+ Novo cálculo</a></div></div>
+      <div class="acoes"><button class="btn" id="bDemo" hidden style="display:none">Importar cálculos</button><a class="btn pri" href="novo.html">+ Novo cálculo</a></div></div>
     <div class="msg" id="demoMsg" style="color:var(--muted);margin:-8px 0 10px"></div>
     <div class="kpis" id="kpis"></div>
     <div class="filtros">
@@ -232,7 +232,7 @@ input,select,.btn{font:inherit;border:1px solid var(--line);background:#fff;colo
     </div>
   </main>
   <main id="telaEquipe" hidden>
-    <div class="topo"><h1>Equipe</h1><a class="btn" href="index.html">Voltar para os cálculos</a></div>
+    <div class="topo"><h1>Equipe</h1><div style="display:flex;gap:8px"><button class="btn" type="button" id="bImportar" title="Importa cálculos salvos em arquivo .json (ex.: a pasta bancada › casos do piloto). Também dá para arrastar a pasta para qualquer ponto da Central.">Importar cálculos</button><a class="btn" href="index.html">Voltar para os cálculos</a></div></div>
     <div class="card" style="margin-bottom:16px"><h2 style="font-size:15px;margin:0 0 10px">Pedidos de acesso</h2><div id="ePedidos"></div></div>
     <div class="card scroll"><h2 style="font-size:15px;margin:0 0 10px">Pessoas com acesso</h2><div id="eUsuarios"></div></div>
     <div class="msg" id="eMsg"></div>
@@ -262,7 +262,7 @@ async function iniciar() {
   $('#navEquipe').hidden = u.papel !== 'admin';
   const h = new Date().getHours(); $('#ola').textContent = `${h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}, ${chamar(u.nome)}`;
   $('#olaSub').textContent = u.papel === 'admin' ? 'Todas as equipes · liquidação, impugnação, provisão e acordo' : `Equipe ${u.equipe} · liquidação, impugnação, provisão e acordo`;
-  $('#bDemo').hidden = u.papel !== 'admin';
+  $('#bDemo').hidden = true;
   souAdmin = u.papel === 'admin';
   const tipoUrl = new URLSearchParams(location.search).get('tipo');
   if (tipoUrl) { $('#fTipo').value = tipoUrl; document.querySelectorAll('.nav a').forEach(x => x.classList.toggle('on', x.id === 'navImp')); }
@@ -349,11 +349,11 @@ async function arquivosSoltos(dt) {
   else out.push(...[...dt.files].filter(f => /\.json$/i.test(f.name)));
   return out;
 }
-document.addEventListener('dragover', e => { if ($('#dropPiloto')) { e.preventDefault(); $('#dropPiloto').classList.add('sobre'); } });
+document.addEventListener('dragover', e => { if (souAdmin) { e.preventDefault(); if ($('#dropPiloto')) $('#dropPiloto').classList.add('sobre'); } });
 document.addEventListener('dragleave', e => { if ($('#dropPiloto') && !e.relatedTarget) $('#dropPiloto').classList.remove('sobre'); });
 document.addEventListener('drop', async e => {
-  if (!$('#dropPiloto')) return;
-  e.preventDefault(); $('#dropPiloto').classList.remove('sobre');
+  if (!souAdmin) return;
+  e.preventDefault(); if ($('#dropPiloto')) $('#dropPiloto').classList.remove('sobre');
   const fs = await arquivosSoltos(e.dataTransfer);
   if (!fs.length) { $('#demoMsg').textContent = 'Não achei arquivos .json no que foi solto. Solte a pasta "casos" ou os arquivos de dentro dela.'; return; }
   carregarPiloto(fs);
@@ -445,26 +445,33 @@ function tipoDe(nome) {
   return 'liquidacao';
 }
 $('#bDemo').onclick = () => carregarPiloto(null);
+$('#bImportar').onclick = () => carregarPiloto(null);
 async function carregarPiloto(soltos) {
   const msg = t => { $('#demoMsg').textContent = t; const c = $('#dropPiloto'); if (c) { let el = c.querySelector('.andamento'); if (!el) { el = document.createElement('div'); el.className = 'andamento'; el.style.cssText = 'margin-top:12px;font-weight:700;color:#075985'; c.appendChild(el); } el.textContent = t; } };
   // no computador da Controladoria lê a pasta da bancada; no site publicado, a administração escolhe os arquivos
-  let nomes = [], arquivos = {};
-  if (soltos && soltos.length) for (const f of soltos) { arquivos[f.name] = f; nomes.push(f.name); }
-  if (!nomes.length) try { const r = await fetch('../bancada/casos/'); if (r.ok) nomes = [...(await r.text()).matchAll(/href="([^"]+\.json)"/g)].map(m => decodeURIComponent(m[1])); } catch (e) {}
-  if (!nomes.length) {
+  // cada item: { nome, ler() } (arquivos com o mesmo nome em pastas diferentes não se misturam)
+  let itens = [];
+  if (soltos && soltos.length) itens = soltos.map(f => ({ nome: f.name, ler: async () => JSON.parse(await f.text()) }));
+  if (!itens.length) try { const r = await fetch('../bancada/casos/'); if (r.ok) itens = [...(await r.text()).matchAll(/href="([^"]+\.json)"/g)].map(m => decodeURIComponent(m[1])).map(n => ({ nome: n, ler: async () => (await fetch('../bancada/casos/' + encodeURIComponent(n))).json() })); } catch (e) {}
+  if (!itens.length) {
     const fs = await new Promise(ok => { const i = document.createElement('input'); i.type = 'file'; i.accept = '.json'; i.multiple = true; i.onchange = () => ok([...i.files]); i.click(); });
     if (!fs.length) return;
-    for (const f of fs) { arquivos[f.name] = f; nomes.push(f.name); }
+    itens = fs.map(f => ({ nome: f.name, ler: async () => JSON.parse(await f.text()) }));
   }
-  if (!confirm(`Salvar ${nomes.length} casos de teste na central (os cálculos do contador conferidos na bancada)? Casos já salvos são pulados.`)) return;
+  // só entram os arquivos que são cálculos (têm parâmetros e contrato); leituras da IA, páginas escaneadas etc. são ignoradas
+  msg('Separando os cálculos…');
+  const calculos = [];
+  for (const it of itens) { try { const c = await it.ler(); if (c && c.parametros && c.parametros.contrato && Array.isArray(c.parametros.verbas)) calculos.push({ nome: it.nome, caso: c }); } catch (e) {} }
+  if (!calculos.length) { msg(`Nenhum cálculo entre os ${itens.length} arquivo(s). Use os arquivos da pasta bancada › casos.`); return; }
+  if (!confirm(`Encontrei ${calculos.length} cálculo(s) do piloto${itens.length > calculos.length ? ` (${itens.length - calculos.length} arquivo(s) que não são cálculo foram ignorados)` : ''}. Salvar na central? Os que já estão lá são pulados.`)) return;
   $('#bDemo').disabled = true;
   try {
     if (!window.MotorPC) { msg('Carregando o motor…'); const pasta = /\/site\//.test(location.pathname) ? 'motor/' : 'motor/'; await carregaScript(pasta + 'tabelas.js'); await carregaScript(pasta + 'motor.js'); }
     const ja = new Set(todos.map(c => c.cnj)); let ok = 0, pulados = 0, falhas = [], jaLista = [];
-    for (const [i, nome] of nomes.entries()) {
-      msg(`Salvando ${i + 1} de ${nomes.length}…`);
+    const nomes = calculos.map(c => c.nome);
+    for (const [i, { nome, caso }] of calculos.entries()) {
+      msg(`Salvando ${i + 1} de ${calculos.length}…`);
       try {
-        const caso = arquivos[nome] ? JSON.parse(await arquivos[nome].text()) : await (await fetch('../bancada/casos/' + encodeURIComponent(nome))).json();
         const cnj = (caso.processo || {}).cnj || (nome.match(/\d{7}-\d{2}\.\d{4}\.5\.02\.\d{4}/) || [])[0];
         if (!cnj) { falhas.push(nome.slice(0, 40) + ': sem número de processo'); continue; }
         if (ja.has(cnj)) { pulados++; jaLista.push(cnj); continue; }
@@ -478,7 +485,7 @@ async function carregarPiloto(soltos) {
         ja.add(cnj); ok++;
       } catch (e) { falhas.push(nome.slice(0, 40) + ': ' + e.message); }
     }
-    msg(`${nomes.length} arquivo(s) recebido(s): ${ok} salvo(s)${pulados ? `, ${pulados} já estavam na central (${jaLista.join(', ')})` : ''}.${falhas.length ? ' Não salvos: ' + falhas.join('; ') : ''}`);
+    msg(`${calculos.length} cálculo(s): ${ok} salvo(s) agora${pulados ? `, ${pulados} já estavam na central (${jaLista.join(', ')})` : ''}.${falhas.length ? ' Não salvos: ' + falhas.join('; ') : ''}`);
     await carregar(); desenharAtividade();
   } finally { $('#bDemo').disabled = false; }
 }
