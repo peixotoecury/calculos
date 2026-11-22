@@ -75,7 +75,9 @@ textarea{width:100%;min-height:54px}
     <nav class="nav">
       <a href="index.html">Cálculos da equipe</a>
       <a class="on" href="novo.html">Novo cálculo</a>
+      <a href="index.html?tipo=impugnacao" id="navImp">Impugnações</a>
       <a href="resultado.html">Resultado do cálculo</a>
+      <a href="index.html#equipe" id="navEquipe" hidden>Equipe</a>
     </nav>
     <div class="rod">Plataforma de Cálculos Peixoto &amp; Cury<br>Piloto interno · Time B</div>
   </aside>
@@ -682,6 +684,10 @@ $('#arq').onchange = e => lerArquivos([...e.target.files]);
 drop.ondragover = e => { e.preventDefault(); drop.classList.add('sobre'); };
 drop.ondragleave = () => drop.classList.remove('sobre');
 drop.ondrop = e => { e.preventDefault(); drop.classList.remove('sobre'); lerArquivos([...e.dataTransfer.files].filter(f => /pdf$/i.test(f.name))); };
+</script>
+
+<script>
+CentralPC.eu().then(u => { const e = document.getElementById('navEquipe'); if (e && u && u.papel === 'admin') e.hidden = false; }).catch(() => {});
 </script>
 </body>
 </html>

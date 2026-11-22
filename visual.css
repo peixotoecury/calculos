@@ -17,3 +17,8 @@ body{background:radial-gradient(1200px 600px at 100% -10%,rgba(0,174,239,.10),tr
 /* botão principal dentro da faixa escura: claro, para aparecer */
 .boasvindas .btn.pri{background:linear-gradient(100deg,#5fd8ff,#00AEEF 55%,#0091d0) !important;color:#04121c !important;border:0 !important;box-shadow:0 10px 24px rgba(0,174,239,.35) !important;font-weight:800}
 .boasvindas .btn:not(.pri){background:rgba(255,255,255,.10) !important;color:#fff !important;border:1px solid rgba(255,255,255,.28) !important}
+/* faixa de boas-vindas: texto à esquerda, botões à direita, sem sobrepor */
+.boasvindas{display:grid !important;grid-template-columns:minmax(0,1fr) auto;column-gap:24px;align-items:center}
+.boasvindas h1,.boasvindas p{grid-column:1}
+.boasvindas .acoes{position:static !important;transform:none !important;grid-column:2;grid-row:1 / span 2;align-self:center}
+@media (max-width:900px){.boasvindas{grid-template-columns:1fr}.boasvindas .acoes{grid-column:1;grid-row:auto;margin-top:14px}}

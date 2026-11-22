@@ -51,6 +51,12 @@ select,.btn{font:inherit;border:1px solid var(--line);background:#fff;color:var(
 .cent .chk-item{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin:6px 0}.cent .chk-item input[type=text]{flex:1;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:4px 8px}
 .cent textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:10px;padding:8px;min-height:60px}
 .cent .msg{font-size:13px;margin-top:6px}
+.imp .dz{border:2px dashed #b9dff0;border-radius:14px;padding:22px;text-align:center;background:#f5fbfe;cursor:pointer;color:#33475b}
+.imp .dz.sobre{border-color:#00AEEF;background:#eaf7fd}
+.imp tr.dv td{background:#fff4f2}.imp tr.dv td.d{color:#b42318;font-weight:700}
+.imp .veredito{margin:12px 0;padding:12px 14px;border-radius:12px;font-size:14px}
+.imp .veredito.ok{background:#e6f4ea;color:#14532d;border:1px solid #b7dfc3}.imp .veredito.no{background:#fff4f2;color:#7a1d12;border:1px solid #f3c4bd}
+.imp textarea{width:100%;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-height:44px}
 .btn.pri{background:var(--navy);border-color:var(--navy);color:#fff}
 .hero{background:radial-gradient(120% 140% at 100% 0%,rgba(0,174,239,.35),transparent 55%),linear-gradient(135deg,#001E36,#00294A);color:#fff;border-radius:14px;padding:22px 24px;display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:18px;align-items:end}
 .hero .proc .k{font-size:12px;color:#9cc3dd;text-transform:uppercase;letter-spacing:1.2px}
@@ -133,7 +139,9 @@ table.mini tr.x td{background:var(--badbg)}
     <nav class="nav">
       <a href="index.html">Cálculos da equipe</a>
       <a href="novo.html">Novo cálculo</a>
+      <a href="index.html?tipo=impugnacao" id="navImp">Impugnações</a>
       <a class="on" href="resultado.html">Resultado do cálculo</a>
+      <a href="index.html#equipe" id="navEquipe" hidden>Equipe</a>
     </nav>
     <div class="rod">Plataforma de Cálculos Peixoto &amp; Cury<br>Motor <span id="versao"></span> · tabelas do PJe-Calc (TRT 2ª Região) até <span id="tabAte"></span></div>
   </aside>
@@ -156,6 +164,9 @@ table.mini tr.x td{background:var(--badbg)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="motor/acordo.js"></script>
 <script src="saidas.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+<script src="impugnacao.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="central.js"></script>
 <script>
@@ -379,6 +390,14 @@ table.mini tr.x td{background:var(--badbg)}
       ${selo}
       ${resumo}
       ${posicao}
+      <div class="card imp" id="cardImp" style="margin-top:16px"><h2>Impugnação ou concordância <small>compare com o cálculo do reclamante ou do perito e gere a minuta em Word</small></h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+          <label style="font-size:13px">Cálculo apresentado <select id="impParte"><option value="reclamante">pelo reclamante</option><option value="perito">pelo perito</option></select></label>
+        </div>
+        <div class="dz" id="impDz"><b>Arraste aqui o PDF do cálculo da parte (PJe-Calc)</b><br><span style="font-size:13px">ou clique para escolher · a leitura é feita aqui no navegador, sem custo</span></div>
+        <input type="file" id="impArq" accept=".pdf" hidden>
+        <div id="impRes"></div>
+      </div>
       <div class="card acordo" style="margin-top:16px"><h2>Simular acordo <small>discriminação das verbas pelo peso de cada uma neste cálculo (modelo do contador)</small></h2>
         <div class="campos">
           <label>Valor líquido do acordo (R$)<input id="acLiq" placeholder="ex.: 50000"></label>
@@ -478,6 +497,60 @@ table.mini tr.x td{background:var(--badbg)}
         <p style="font-size:12px;color:var(--muted);margin:8px 0 0">INSS sobre ${brl(a.baseInss)} de verbas salariais, repartidas em ${a.competencias} competências (${brl(a.baseInss / a.competencias)} por mês). IR pelos rendimentos acumulados: ${brl(a.irMensal)} por mês. ${esc(a.regraSelic)}.</p>`;
     };
     document.getElementById('acPdf').onclick = () => ultimoAcordo && SaidasPC.abrirPdfAcordo(caso, ultimoAcordo);
+
+    // ---------- impugnação ou concordância ----------
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    let comp = null, deles = null;
+    // o relatório do PJe-Calc às vezes vem com a página girada por dentro (as linhas no outro eixo):
+    // monta as linhas nas duas orientações e fica com a que reconhece mais verbas
+    async function linhasDoPdf(arq, girado) {
+      const pdf = await pdfjsLib.getDocument({ data: await arq.arrayBuffer() }).promise, out = [];
+      const [lin, col, ordem] = girado ? [4, 5, 1] : [5, 4, -1];
+      for (let n = 1; n <= Math.min(pdf.numPages, 6); n++) {
+        const its = (await (await pdf.getPage(n)).getTextContent()).items.filter(i => i.str.trim()), grupos = {};
+        for (const i of its) { const k = Math.round(i.transform[lin] / 2); (grupos[k] = grupos[k] || []).push(i); }
+        Object.keys(grupos).sort((a, b) => ordem * (a - b)).forEach(k => out.push(grupos[k].sort((a, b) => a.transform[col] - b.transform[col]).map(i => i.str).join(' ').replace(/\s+/g, ' ').trim()));
+      }
+      return out;
+    }
+    async function lerImp(arq) {
+      const res = document.getElementById('impRes'); res.innerHTML = '<p style="color:var(--muted)">Lendo o cálculo…</p>';
+      try {
+        const a = ImpugnacaoPC.lerCalculoPjeCalc(await linhasDoPdf(arq, false)), b = ImpugnacaoPC.lerCalculoPjeCalc(await linhasDoPdf(arq, true));
+        deles = b.verbas.length > a.verbas.length ? b : a;
+        if (!deles.verbas.length && deles.liquido == null) { res.innerHTML = '<div class="veredito no">Não reconheci o resumo do PJe-Calc nesse PDF. Por enquanto a leitura funciona com o relatório do PJe-Calc (página "Resumo do Cálculo").</div>'; return; }
+        comp = ImpugnacaoPC.comparar(caso, r, deles, 1);
+        desenhaImp();
+      } catch (e) { res.innerHTML = `<div class="veredito no">Não consegui ler: ${esc(e.message)}</div>`; }
+    }
+    function desenhaImp() {
+      const res = document.getElementById('impRes'), div = comp.linhas.filter(l => l.aMaior), menor = comp.linhas.filter(l => l.diverge && !l.aMaior);
+      res.innerHTML = `<div class="veredito ${comp.concorda ? 'ok' : 'no'}">${comp.concorda
+          ? `<b>Nada apurado a maior.</b> Nenhuma verba nem total acima do nosso cálculo (tolerância de R$ 1,00): a minuta sai como <b>concordância</b>.${menor.length ? ` ${menor.length} verba(s) foram apuradas a menor, o que não prejudica a reclamada.` : ''}`
+          : `<b>${div.length} verba(s) apurada(s) a maior</b>, que vão para a impugnação.${menor.length ? ` Outras ${menor.length} foram apuradas a menor: aparecem na tabela, mas não são impugnadas.` : ''} Líquido do cálculo apresentado ${brl(deles.liquido)} x nosso ${brl(r.totais.liquido)}.`}
+          ${deles.avisos.length ? `<div style="margin-top:6px;font-size:12.5px">${deles.avisos.length} linha(s) do PDF não conferiram e ficaram de fora.</div>` : ''}</div>
+        <div class="scroll"><table class="tbl"><thead><tr><th>Verba</th><th class="n">Cálculo apresentado</th><th class="n">Nosso cálculo</th><th class="n">Diferença</th></tr></thead><tbody>
+          ${comp.linhas.map(l => `<tr class="${l.aMaior ? 'dv' : ''}"><td>${esc(l.nome)}${l.soDeles ? ' <span class="tipo">só no cálculo apresentado</span>' : ''}${l.nomeDeles && l.nomeDeles !== l.nome && !l.soDeles ? `<div class="tipo">lá: ${esc(l.nomeDeles)}</div>` : ''}</td>
+            <td class="n">${brl(l.deles)}</td><td class="n">${brl(l.nosso)}</td><td class="n d">${l.aMaior ? brl(l.dif) + ' a maior' : l.diverge ? '<span style="color:var(--muted);font-weight:400">' + brl(l.dif) + ' a menor</span>' : 'igual'}</td></tr>`).join('')}
+          ${comp.totais.map(x => `<tr class="tot ${x.diverge ? 'dv' : ''}"><td>${esc(x.nome)}</td><td class="n">${brl(x.deles)}</td><td class="n">${brl(x.nosso)}</td><td class="n d">${x.diverge ? brl(x.dif) : 'igual'}</td></tr>`).join('')}
+        </tbody></table></div>
+        ${div.length ? `<h3 style="font-size:14px;margin:14px 0 6px">Fundamento de cada item impugnado <span class="tipo">opcional · vai para a minuta</span></h3>
+          ${div.map((l, i) => `<div style="margin:6px 0"><b style="font-size:13px">${esc(l.nome)}</b><textarea data-fund="${i}" placeholder="Ex.: a sentença (p. 12) defere o adicional sobre o salário mínimo; o cálculo usou o salário base."></textarea></div>`).join('')}` : ''}
+        <div class="saidas"><button class="btn pri" type="button" id="impWord">Gerar minuta em Word</button><span>Os campos que dependem do processo (vara, cidade, data, advogado) saem em amarelo para preencher.</span></div>`;
+      document.getElementById('impWord').onclick = async () => {
+        const fund = {}; div.forEach((l, i) => { const t = document.querySelector(`[data-fund="${i}"]`); if (t && t.value.trim()) fund[l.nome] = t.value.trim(); });
+        const blob = await ImpugnacaoPC.minutaDocx({ comparacao: comp, r, parte: document.getElementById('impParte').value, concordancia: comp.concorda,
+          cnj: caso.processo.cnj, reclamante: caso.processo.reclamante, reclamado: caso.processo.reclamado, dataLiquidacao: dt(ct.liquidacao), fundamentos: fund });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `${comp.concorda ? 'Concordância' : 'Impugnação'} aos cálculos ${caso.processo.cnj || ''}.docx`; a.click();
+      };
+    }
+    const dz = document.getElementById('impDz'), arqImp = document.getElementById('impArq');
+    dz.onclick = () => arqImp.click();
+    arqImp.onchange = e => e.target.files[0] && lerImp(e.target.files[0]);
+    dz.ondragover = e => { e.preventDefault(); dz.classList.add('sobre'); };
+    dz.ondragleave = () => dz.classList.remove('sobre');
+    dz.ondrop = e => { e.preventDefault(); dz.classList.remove('sobre'); const f = [...e.dataTransfer.files].find(x => /\.pdf$/i.test(x.name)); if (f) lerImp(f); };
     document.querySelectorAll('tr.verba').forEach(tr => tr.addEventListener('click', () => {
       const id = tr.dataset.id, det = document.querySelector(`tr[data-det="${id}"]`);
       const abrir = det.hidden; det.hidden = !abrir; tr.classList.toggle('aberta', abrir);
@@ -494,6 +567,10 @@ table.mini tr.x td{background:var(--badbg)}
   }
   function MotorPC_diaAntes(s){ const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); }
 })();
+</script>
+
+<script>
+CentralPC.eu().then(u => { const e = document.getElementById('navEquipe'); if (e && u && u.papel === 'admin') e.hidden = false; }).catch(() => {});
 </script>
 </body>
 </html>

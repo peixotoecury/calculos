@@ -206,8 +206,9 @@ input,select,.btn{font:inherit;border:1px solid var(--line);background:#fff;colo
     <nav class="nav">
       <a class="on" href="index.html">Cálculos da equipe</a>
       <a href="novo.html">Novo cálculo</a>
+      <a href="index.html?tipo=impugnacao" id="navImp">Impugnações</a>
       <a href="resultado.html">Resultado do cálculo</a>
-      <a href="#" id="navEquipe" hidden>Equipe</a>
+      <a href="index.html#equipe" id="navEquipe" hidden>Equipe</a>
     </nav>
     <div class="rod"><span id="quem"></span><br><button id="bSair" type="button">Sair</button></div>
   </aside>
@@ -263,8 +264,11 @@ async function iniciar() {
   $('#olaSub').textContent = `Cálculos da equipe ${u.papel === 'admin' ? '(todas as equipes)' : u.equipe}: liquidação, impugnação, provisão e acordo, com revisão e histórico.`;
   $('#bDemo').hidden = u.papel !== 'admin';
   souAdmin = u.papel === 'admin';
+  const tipoUrl = new URLSearchParams(location.search).get('tipo');
+  if (tipoUrl) { $('#fTipo').value = tipoUrl; document.querySelectorAll('.nav a').forEach(x => x.classList.toggle('on', x.id === 'navImp')); }
   await carregar();
   desenharAtividade();
+  if (location.hash === '#equipe' && souAdmin) abrirEquipe();
 }
 async function carregar() {
   try { todos = await CentralPC.listar({}); } catch (e) { $('#lista').innerHTML = `<div class="vazio">Não consegui carregar: ${esc(e.message)}</div>`; return; }
@@ -384,7 +388,7 @@ async function abrirEquipe() {
   document.querySelectorAll('[data-rc]').forEach(b => b.onclick = () => { const i = +b.dataset.rc; if (confirm(`Recusar o acesso de ${ps[i].nome}?`)) tenta(() => CentralPC.decidirAcesso(ps[i].user_id, false, null, null)); });
   document.querySelectorAll('[data-aj]').forEach(b => b.onclick = () => { const i = +b.dataset.aj; tenta(() => CentralPC.ajustarUsuario(us[i].user_id, $('#ue' + i).value.trim() || 'Time B', $('#up' + i).value, $('#ua' + i).checked)); });
 }
-$('#navEquipe').onclick = e => { e.preventDefault(); abrirEquipe(); };
+$('#navEquipe').onclick = e => { e.preventDefault(); history.replaceState(null, '', '#equipe'); abrirEquipe(); };
 
 
 // ---------- senha esquecida ----------
