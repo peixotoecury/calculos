@@ -70,6 +70,10 @@
   }
   async function versoes(id) { return erro(await sb.from('calc_versoes').select('numero, criado_por_nome, criado_em, totais, observacao').eq('calculo_id', id).order('numero', { ascending: false })); }
   async function revisoes(id) { return erro(await sb.from('calc_revisoes').select('*').eq('calculo_id', id).order('criado_em', { ascending: false })); }
+  // últimas movimentações de todos os cálculos que a pessoa pode ver (a RLS filtra pela equipe)
+  async function eventosRecentes(limite) {
+    return erro(await sb.from('calc_eventos').select('*, calc_calculos(cnj, reclamante, cliente)').order('criado_em', { ascending: false }).limit(limite || 12));
+  }
   async function eventos(id) { return erro(await sb.from('calc_eventos').select('*').eq('calculo_id', id).order('criado_em', { ascending: false })); }
   async function documentos(id) { return erro(await sb.from('calc_documentos').select('*').eq('calculo_id', id).order('criado_em')); }
 
@@ -124,6 +128,6 @@
     erro(await sb.rpc('calc_ajustar_usuario', { p_user: userId, p_equipe: equipe, p_papel: papel, p_ativo: ativo }));
   }
 
-  global.CentralPC = { sb, eu, entrar, sair, trocarSenha, esqueciSenha, lerIA, criarLogin, pedirAcesso, meuPedido, pedidos, usuarios, decidirAcesso, ajustarUsuario, listar, calculo, versao, versoes, revisoes, eventos, documentos,
+  global.CentralPC = { sb, eu, entrar, sair, trocarSenha, esqueciSenha, lerIA, eventosRecentes, criarLogin, pedirAcesso, meuPedido, pedidos, usuarios, decidirAcesso, ajustarUsuario, listar, calculo, versao, versoes, revisoes, eventos, documentos,
                        salvar, revisar, status, enviarDocumento, linkDocumento, TIPOS, STATUS, CHECKLIST };
 })(window);

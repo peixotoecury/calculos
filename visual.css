@@ -14,3 +14,6 @@ body{background:radial-gradient(1200px 600px at 100% -10%,rgba(0,174,239,.10),tr
 .topo h1,.card h2{font-family:Sora,Figtree,sans-serif;letter-spacing:-.01em}
 .topo h1{font-weight:600}
 @media (max-width:900px){.logo-pc{height:28px;margin:0 12px 0 0;display:inline-block}.side .marca{border-bottom:0;padding-bottom:0}}
+/* botão principal dentro da faixa escura: claro, para aparecer */
+.boasvindas .btn.pri{background:linear-gradient(100deg,#5fd8ff,#00AEEF 55%,#0091d0) !important;color:#04121c !important;border:0 !important;box-shadow:0 10px 24px rgba(0,174,239,.35) !important;font-weight:800}
+.boasvindas .btn:not(.pri){background:rgba(255,255,255,.10) !important;color:#fff !important;border:1px solid rgba(255,255,255,.28) !important}
