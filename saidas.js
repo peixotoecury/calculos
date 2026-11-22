@@ -104,7 +104,7 @@ section.verba { break-inside: auto; }
 <table class="par"><tbody>
   ${linha('Admissão e demissão', `${dt(ct.admissao)} a ${dt(ct.demissao)}`)}
   ${linha('Aviso prévio', `${r.diasAviso} dias${ct.projetaAviso ? ` (projeção até ${dt(r.fimProjetado)})` : ''}`)}
-  ${linha('Ajuizamento', dt(ct.ajuizamento))}${linha('Liquidação', dt(ct.liquidacao))}
+  ${linha('Ajuizamento (data da distribuição)', dt(ct.ajuizamento))}${linha('Liquidação', dt(ct.liquidacao))}
   ${linha('Correção monetária', indiceTexto(p.atualizacao))}
   ${linha('Juros de mora', 'TRD simples até a véspera do ajuizamento e taxa legal a partir dele (ADC 58 e Lei 14.905/2024), sobre as verbas corrigidas deduzida a contribuição do reclamante')}
   ${linha('Férias', p.ferias.map(f => `${f.relativa} ${String(f.situacao || '').toLowerCase()}`).join(' · ') || 'nenhuma informada')}
@@ -232,7 +232,7 @@ ${tab(['Período', 'Rendimentos', 'Meses', 'INSS', 'Desc. simplificado', 'Base',
     const res = [
       [S('Demonstrativo de cálculo'), S('')],
       [S('Processo'), S(pr.cnj || '')], [S('Reclamante'), S(pr.reclamante || '')], [S('Reclamado'), S(pr.reclamado || '')],
-      [S('Ajuizamento'), D(ct.ajuizamento)], [S('Liquidação'), D(ct.liquidacao)], [S('Correção'), S(indiceTexto(p.atualizacao))], [S(''), S('')],
+      [S('Ajuizamento (data da distribuição)'), D(ct.ajuizamento)], [S('Liquidação'), D(ct.liquidacao)], [S('Correção'), S(indiceTexto(p.atualizacao))], [S(''), S('')],
       [S('CRÉDITO DO RECLAMANTE'), S('')],
       [S('Verbas corrigidas'), F(`Verbas!F${totVer}`)],                                  // 10
       [S('Juros sobre as verbas'), F(`Juros!F${totJur}`)],                               // 11
@@ -256,6 +256,17 @@ ${tab(['Período', 'Rendimentos', 'Meses', 'INSS', 'Desc. simplificado', 'Base',
     res.push([S('Custas judiciais'), N(t.custas || 0)]);
     const ult = res.length;
     res.push([S('Total devido pelo reclamado'), F(`ROUND(SUM(B21:B${ult}),2)`)]);
+    // valor na data da distribuição (ajuizamento): correção até lá e só os juros pré-judiciais (TRD)
+    const pd = global.MotorPC && global.MotorPC.posicaoNaDistribuicao ? global.MotorPC.posicaoNaDistribuicao(caso, global.TABELAS) : null;
+    if (pd) {
+      const i0 = res.length + 3;
+      res.push([S(''), S('')], [S(`VALOR NA DATA DA DISTRIBUIÇÃO (${dt(pd.data)})`), S('')],
+        [S('Verbas corrigidas até o ajuizamento'), N(pd.corrigido)],
+        [S('Juros pré-judiciais (TRD)'), N(pd.juros)],
+        [S('FGTS e multa'), N(pd.fgts)],
+        [S('Valor bruto na distribuição'), F(`ROUND(B${i0}+B${i0 + 1}+B${i0 + 2},2)`)]);
+      if (pd.posterior) res.push([S('Parcelas que vencem a partir do ajuizamento (valor nominal, fora do total)'), N(pd.posterior)]);
+    }
     res.push([S(''), S('')], [S('Cálculo elaborado pelo Peixoto & Cury. Os valores do demonstrativo vêm do motor da plataforma; diferença, correção, juros, FGTS e totais são fórmulas.'), S('')]);
 
     const wb = X.utils.book_new();
