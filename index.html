@@ -140,7 +140,7 @@ input,select,.btn{font:inherit;border:1px solid var(--line);background:#fff;colo
 .vazioPiloto p{color:var(--muted);margin:0 auto 16px;max-width:560px}
 .vazioPiloto.sobre{border-color:#00AEEF;background:#eaf7fd}
 .tipochip{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:6px;background:#eef2f6;color:#33475b}
-.tipochip.impugnacao{background:#fdecec;color:#9f1d1d}.tipochip.acordo{background:#e9f7ef;color:#166534}.tipochip.inicial{background:#eef2ff;color:#3730a3}
+.tipochip.impugnacao{background:#fdecec;color:#9f1d1d}.tipochip.sentenca{background:#fff7e6;color:#92400e}.tipochip.acordao{background:#f3e8ff;color:#6b21a8}.tipochip.laudo{background:#ecfeff;color:#155e75}.tipochip.acordo{background:#e9f7ef;color:#166534}.tipochip.inicial{background:#eef2ff;color:#3730a3}
 @media (max-width:1500px){.painel{grid-template-columns:1fr}.lado{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:900px){.lado{grid-template-columns:1fr}}
 </style>
@@ -439,10 +439,12 @@ $('#fNova').onsubmit = async e => {
 const carregaScript = src => new Promise((ok, er) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = er; document.head.appendChild(s); });
 function clienteDe(c) { const r = ((c.processo || {}).reclamado || c.arquivo || '').toUpperCase(); return /CARTUCH|CBC/.test(r) ? 'CBC' : /BRIDGESTONE/.test(r) ? 'Bridgestone' : 'Bridgestone'; }
 function tipoDe(nome) {
-  const n = nome.toLowerCase();
+  const n = nome.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   if (/impugna/.test(n)) return 'impugnacao';
+  if (/laudo/.test(n)) return 'laudo';
+  if (/acordao/.test(n)) return 'acordao';
   if (/inicial/.test(n)) return 'inicial';
-  if (/laudo/.test(n)) return 'outro';
+  if (/sentenca/.test(n) && !/liquida/.test(n)) return 'sentenca';
   return 'liquidacao';
 }
 $('#bDemo').onclick = () => carregarPiloto(null);

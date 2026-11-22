@@ -10,8 +10,9 @@
   const BUCKET = 'calculos-documentos';
   const sb = global.supabase.createClient(URL_SB, CHAVE, { auth: { persistSession: true, storageKey: 'pc-calculos-auth' } });
 
-  const TIPOS = { inicial: 'Cálculo pela inicial', liquidacao: 'Liquidação', impugnacao: 'Impugnação', concordancia: 'Concordância',
-                  provisao: 'Provisão', acordo: 'Acordo', outro: 'Outro' };
+  // tipo = fase do processo em que o cálculo foi feito (inicial, sentença, acórdão, liquidação) ou finalidade
+  const TIPOS = { inicial: 'Cálculo pela inicial', sentenca: 'Cálculo de sentença', acordao: 'Cálculo de acórdão', liquidacao: 'Liquidação',
+                  impugnacao: 'Impugnação', concordancia: 'Concordância', laudo: 'Laudo pericial', provisao: 'Provisão', acordo: 'Acordo', outro: 'Outro' };
   const STATUS = { rascunho: 'Rascunho', em_revisao: 'Em revisão', revisado: 'Revisado', devolvido: 'Devolvido para ajuste',
                    entregue: 'Entregue', arquivado: 'Arquivado' };
   const CHECKLIST = [
