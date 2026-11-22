@@ -233,7 +233,7 @@ input,select,.btn{font:inherit;border:1px solid var(--line);background:#fff;colo
     </div>
   </main>
   <main id="telaEquipe" hidden>
-    <div class="topo"><h1>Equipe</h1><div style="display:flex;gap:8px"><button class="btn" type="button" id="bImportar" title="Importa cálculos salvos em arquivo .json (ex.: a pasta bancada › casos do piloto). Também dá para arrastar a pasta para qualquer ponto da Central.">Importar cálculos</button><a class="btn" href="index.html">Voltar para os cálculos</a></div></div>
+    <div class="topo"><h1>Equipe</h1><div style="display:flex;gap:8px"><button class="btn" type="button" id="bImportar" title="Escolha a pasta com os cálculos (ex.: Plataforma de cálculos Peixoto e Cury › bancada). A central acha os cálculos nas subpastas e pula os que já estão aqui.">Importar cálculos (escolher pasta)</button><a class="btn" href="index.html">Voltar para os cálculos</a></div></div>
     <div class="card" style="margin-bottom:16px"><h2 style="font-size:15px;margin:0 0 10px">Pedidos de acesso</h2><div id="ePedidos"></div></div>
     <div class="card scroll"><h2 style="font-size:15px;margin:0 0 10px">Pessoas com acesso</h2><div id="eUsuarios"></div></div>
     <div class="msg" id="eMsg"></div>
@@ -455,8 +455,9 @@ async function carregarPiloto(soltos) {
   if (soltos && soltos.length) itens = soltos.map(f => ({ nome: f.name, ler: async () => JSON.parse(await f.text()) }));
   if (!itens.length) try { const r = await fetch('../bancada/casos/'); if (r.ok) itens = [...(await r.text()).matchAll(/href="([^"]+\.json)"/g)].map(m => decodeURIComponent(m[1])).map(n => ({ nome: n, ler: async () => (await fetch('../bancada/casos/' + encodeURIComponent(n))).json() })); } catch (e) {}
   if (!itens.length) {
-    const fs = await new Promise(ok => { const i = document.createElement('input'); i.type = 'file'; i.accept = '.json'; i.multiple = true; i.onchange = () => ok([...i.files]); i.click(); });
-    if (!fs.length) return;
+    // escolhe a PASTA (bancada ou casos): a central percorre as subpastas e fica só com os cálculos
+    const fs = await new Promise(ok => { const i = document.createElement('input'); i.type = 'file'; i.webkitdirectory = true; i.multiple = true; i.onchange = () => ok([...i.files].filter(f => /\.json$/i.test(f.name))); i.click(); });
+    if (!fs.length) { msg('Nenhum arquivo .json na pasta escolhida. Escolha a pasta "bancada" (ou "casos") da Plataforma de cálculos.'); return; }
     itens = fs.map(f => ({ nome: f.name, ler: async () => JSON.parse(await f.text()) }));
   }
   // só entram os arquivos que são cálculos (têm parâmetros e contrato); leituras da IA, páginas escaneadas etc. são ignoradas
