@@ -141,7 +141,8 @@ input,select,.btn{font:inherit;border:1px solid var(--line);background:#fff;colo
 .vazioPiloto.sobre{border-color:#00AEEF;background:#eaf7fd}
 .tipochip{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:6px;background:#eef2f6;color:#33475b}
 .tipochip.impugnacao{background:#fdecec;color:#9f1d1d}.tipochip.acordo{background:#e9f7ef;color:#166534}.tipochip.inicial{background:#eef2ff;color:#3730a3}
-@media (max-width:1100px){.painel{grid-template-columns:1fr}}
+@media (max-width:1500px){.painel{grid-template-columns:1fr}.lado{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:900px){.lado{grid-template-columns:1fr}}
 </style>
 <link rel="stylesheet" href="visual.css">
 </head>
@@ -292,9 +293,9 @@ function desenhar() {
   const vis = todos.filter(c => (!filtroStatus || c.status === filtroStatus) && (!t || c.tipo === t) && (!cl || c.cliente === cl)
     && (!b || (c.cnj || '').toLowerCase().includes(b) || (c.reclamante || '').toLowerCase().includes(b)));
   $('#lista').innerHTML = vis.length ? `<table class="tbl"><thead><tr><th>Processo</th><th>Cliente</th><th>Tipo</th><th>Situação</th><th class="esc">Responsável</th><th class="n">Líquido</th><th class="esc">Atualizado</th></tr></thead><tbody>${
-    vis.map(c => `<tr class="l" data-id="${c.id}"><td><b>${esc(c.cnj)}</b><div class="sub">${esc(c.reclamante || '')}</div></td><td>${esc(c.cliente)}</td>
+    vis.map(c => `<tr class="l" data-id="${c.id}"><td><b style="white-space:nowrap">${esc(c.cnj)}</b><div class="sub">${esc(c.reclamante || '')}</div></td><td>${esc(c.cliente)}</td>
       <td><span class="tipochip ${c.tipo}">${esc(CentralPC.TIPOS[c.tipo] || c.tipo)}</span><div class="sub">versão ${c.versao_atual}</div></td><td><span class="st ${c.status}">${esc(CentralPC.STATUS[c.status] || c.status)}</span></td>
-      <td class="esc"><span class="av">${esc((c.responsavel_nome || '?').split(' ').filter(Boolean).slice(0, 2).map(x => x[0]).join(''))}</span>${esc(c.responsavel_nome || '')}${c.revisor_nome ? `<div class="sub">revisão: ${esc(c.revisor_nome)}</div>` : ''}</td>
+      <td class="esc" style="white-space:nowrap" title="${esc(c.responsavel_nome || '')}"><span class="av">${esc((c.responsavel_nome || '?').split(' ').filter(Boolean).slice(0, 2).map(x => x[0]).join(''))}</span>${esc(chamar(c.responsavel_nome))}${c.revisor_nome ? `<div class="sub">revisão: ${esc(chamar(c.revisor_nome))}</div>` : ''}</td>
       <td class="n">${brl(c.liquido)}</td><td class="esc sub">${dh(c.atualizado_em)}</td></tr>`).join('')}</tbody></table>`
     : (!todos.length && souAdmin ? `<div class="vazioPiloto" id="dropPiloto">
           <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#00AEEF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
@@ -327,7 +328,7 @@ async function desenharAtividade() {
   const ACAO = { criado: ['criou', '#00AEEF'], nova_versao: ['salvou nova versão de', '#0E2841'], em_revisao: ['enviou para revisão', '#0284c7'], aprovado: ['aprovou', '#16a34a'],
                  devolvido: ['devolveu para ajuste', '#d97706'], entregue: ['entregou', '#7c3aed'], arquivado: ['arquivou', '#64748b'] };
   $('#atividade').innerHTML = evs.length ? evs.map(e => { const [txt, cor] = ACAO[e.acao] || [e.acao, '#00AEEF'], c = e.calc_calculos || {};
-    return `<div class="ev" style="--cor:${cor}"><span class="pt"></span><div><b>${esc((e.usuario_nome || '').split(' ')[0])}</b> ${esc(txt)} <b>${esc(c.cnj || '')}</b><small>${esc(c.cliente || '')} · ${dh(e.criado_em)}</small></div></div>`; }).join('')
+    return `<div class="ev" style="--cor:${cor}"><span class="pt"></span><div><b>${esc(chamar(e.usuario_nome))}</b> ${esc(txt)} <b>${esc(c.cnj || '')}</b><small>${esc(c.cliente || '')} · ${dh(e.criado_em)}</small></div></div>`; }).join('')
     : '<div class="sub">Nada por aqui ainda.</div>';
 }
 
