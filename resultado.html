@@ -166,6 +166,9 @@ table.mini tr.x td{background:var(--badbg)}
 <script src="motor/motor.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="motor/acordo.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="motor/pjc_modelo.js"></script>
+<script src="motor/pjc.js"></script>
 <script src="saidas.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
@@ -389,7 +392,7 @@ table.mini tr.x td{background:var(--badbg)}
         <div class="kpi"><div class="k">FGTS, INSS e IR</div><div class="v">${brl(t.inssReclamante + t.inssReclamado + t.fgts + t.impostoRenda)}</div><div class="s">encargos</div></div>
         <div class="kpi"><div class="k">Total do reclamado</div><div class="v">${brl(t.totalReclamado)}</div><div class="s">com honorários e custas</div></div>
       </section>
-      <div class="saidas"><button class="btn pri" type="button" id="btnPdf">Baixar PDF</button><button class="btn" type="button" id="btnXlsx">Baixar Excel</button>${idCentral ? '' : '<button class="btn" type="button" id="btnCentral">Salvar na central</button>'}
+      <div class="saidas"><button class="btn pri" type="button" id="btnPdf">Baixar PDF</button><button class="btn" type="button" id="btnXlsx">Baixar Excel</button><button class="btn" type="button" id="btnPjc" title="Arquivo para abrir no PJe-Calc (Cálculo > Importar)">Baixar PJC (PJe-Calc)</button>${idCentral ? '' : '<button class="btn" type="button" id="btnCentral">Salvar na central</button>'}
         <span>PDF: o relatório abre na janela de impressão; escolha "Salvar como PDF".</span></div>
       ${selo}
       ${resumo}
@@ -448,6 +451,21 @@ table.mini tr.x td{background:var(--badbg)}
 
     document.getElementById('btnPdf').onclick = () => SaidasPC.abrirPdf(caso, r, pd);
     document.getElementById('btnXlsx').onclick = () => SaidasPC.baixarExcel(caso, r);
+    // PJC: o PJe-Calc importa, liquida e refaz juros, FGTS, INSS e IR (conferido com os 14 casos do piloto)
+    document.getElementById('btnPjc').onclick = async e => {
+      const b = e.currentTarget, t = b.textContent;
+      if (!caso.processo.cpf) {
+        const v = prompt('CPF do reclamante (opcional). Sem ele o PJe-Calc importa e liquida normalmente, mas só gera o resumo para o PJe depois que o CPF for preenchido lá.', '');
+        if (v === null) return;
+        if (v.replace(/\D/g, '').length === 11) caso.processo.cpf = v.replace(/\D/g, '');
+      }
+      b.disabled = true; b.textContent = 'Gerando…';
+      try {
+        const { nome, blob } = await PjcPC.arquivo(caso, r);
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome; a.click();
+      } catch (err) { alert('Não consegui gerar o PJC: ' + err.message); }
+      finally { b.disabled = false; b.textContent = t; }
+    };
 
     // salvar na central um cálculo aberto fora dela (caso local ou montado)
     const bC = document.getElementById('btnCentral');
