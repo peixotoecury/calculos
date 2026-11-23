@@ -845,5 +845,5 @@
     const corrigido = r2(verbas.reduce((s, v) => s + v.corrigido, 0)), posterior = r2(verbas.reduce((s, v) => s + v.posterior, 0));
     return { data: aj, verbas, corrigido, juros, fgts: r2(fgts), total: r2(corrigido + juros + fgts), posterior };
   }
-  global.MotorPC = { calcular, posicaoNaDistribuicao, inssSegurado, apurarCartoes, totaisMensais, colunasDoCartao, pascoa, fatorCorrecao, OPCOES, versao: '0.3.0' };
+  global.MotorPC = { calcular, posicaoNaDistribuicao, inssSegurado, apurarCartoes, totaisMensais, colunasDoCartao, pascoa, fatorCorrecao, OPCOES, versao: '0.4.0' };
 })(typeof window !== 'undefined' ? window : globalThis);

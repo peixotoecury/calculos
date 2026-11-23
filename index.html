@@ -467,29 +467,30 @@ async function carregarPiloto(soltos) {
   const calculos = [];
   for (const it of itens) { try { const c = await it.ler(); if (c && c.parametros && c.parametros.contrato && Array.isArray(c.parametros.verbas)) calculos.push({ nome: it.nome, caso: c }); } catch (e) {} }
   if (!calculos.length) { msg(`Nenhum cálculo entre os ${itens.length} arquivo(s). Use os arquivos da pasta bancada › casos.`); return; }
-  if (!confirm(`Encontrei ${calculos.length} cálculo(s) do piloto${itens.length > calculos.length ? ` (${itens.length - calculos.length} arquivo(s) que não são cálculo foram ignorados)` : ''}. Salvar na central? Os que já estão lá são pulados.`)) return;
+  if (!confirm(`Encontrei ${calculos.length} cálculo(s) do piloto${itens.length > calculos.length ? ` (${itens.length - calculos.length} arquivo(s) que não são cálculo foram ignorados)` : ''}. Salvar na central? Os que já estão lá ganham uma versão nova (a anterior fica no histórico).`)) return;
   $('#bDemo').disabled = true;
   try {
     if (!window.MotorPC) { msg('Carregando o motor…'); const pasta = /\/site\//.test(location.pathname) ? 'motor/' : 'motor/'; await carregaScript(pasta + 'tabelas.js'); await carregaScript(pasta + 'motor.js'); }
-    const ja = new Set(todos.map(c => c.cnj)); let ok = 0, pulados = 0, falhas = [], jaLista = [];
+    // caso que já está na central: nova versão do mesmo cálculo (mantém histórico, revisão e documentos)
+    const ja = new Map(todos.map(c => [c.cnj, c.id])); let ok = 0, novasVersoes = 0, falhas = [];
     const nomes = calculos.map(c => c.nome);
     for (const [i, { nome, caso }] of calculos.entries()) {
       msg(`Salvando ${i + 1} de ${calculos.length}…`);
       try {
         const cnj = (caso.processo || {}).cnj || (nome.match(/\d{7}-\d{2}\.\d{4}\.5\.02\.\d{4}/) || [])[0];
         if (!cnj) { falhas.push(nome.slice(0, 40) + ': sem número de processo'); continue; }
-        if (ja.has(cnj)) { pulados++; jaLista.push(cnj); continue; }
         const ct = caso.parametros.contrato;
         const op = { tabelasAte: ct.dataCriacao || null, indiceAte: (caso.parametros.atualizacao || {}).ultimoIndice || null };
         const r = MotorPC.calcular(JSON.parse(JSON.stringify(caso)), TABELAS, op);
         Object.assign(MotorPC.OPCOES, { tabelasAte: null, indiceAte: null });   // não deixa a data do contador presa no motor
-        await CentralPC.salvar({ cnj, cliente: clienteDe(caso), tipo: tipoDe(nome), reclamante: (caso.processo || {}).reclamante || '', reclamado: (caso.processo || {}).reclamado || '',
+        const existente = ja.get(cnj);
+        await CentralPC.salvar({ id: existente || null, cnj, cliente: clienteDe(caso), tipo: tipoDe(nome), reclamante: (caso.processo || {}).reclamante || '', reclamado: (caso.processo || {}).reclamado || '',
           data_liquidacao: ct.liquidacao, caso, totais: r.totais, motor: MotorPC.versao,
-          observacao: 'Caso de teste: cálculo do contador reproduzido pela plataforma (bancada).', observacao_versao: 'Carga de demonstração' });
-        ja.add(cnj); ok++;
+          observacao: 'Caso de teste: cálculo do contador reproduzido pela plataforma (bancada).', observacao_versao: existente ? `Atualização do piloto (${new Date().toLocaleDateString('pt-BR')}): motor ${MotorPC.versao}` : 'Carga de demonstração' });
+        if (existente) novasVersoes++; else { ja.set(cnj, true); ok++; }
       } catch (e) { falhas.push(nome.slice(0, 40) + ': ' + e.message); }
     }
-    msg(`${calculos.length} cálculo(s): ${ok} salvo(s) agora${pulados ? `, ${pulados} já estavam na central (${jaLista.join(', ')})` : ''}.${falhas.length ? ' Não salvos: ' + falhas.join('; ') : ''}`);
+    msg(`${calculos.length} cálculo(s): ${ok} novo(s) e ${novasVersoes} atualizado(s) com versão nova.${falhas.length ? ' Não salvos: ' + falhas.join('; ') : ''}`);
     await carregar(); desenharAtividade();
   } finally { $('#bDemo').disabled = false; }
 }
