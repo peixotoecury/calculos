@@ -188,8 +188,13 @@
         // dias = min(dias do mês − férias, 30) − faltas. Fabio 07/2020 (falta 01 a 05) = 25; Fabio 03/2020
         // (férias 01 a 18) = 13; Alisson 12/2022 (férias 22 a 31) = 21. Mês parcial: dias corridos
         if (ini === `${m}-01` && fim === fimMes(m) && dias < diasNoMes(m)) {
+          // cada período conta os seus dias, mesmo sobrepostos (o PJe-Calc soma período a período): Anderson 03/2020,
+          // dois gozos que se sobrepõem em 01 a 03/03 = 13 dias de férias, 18 trabalhados; 03/2024, 8 de férias e 19 de
+          // falta sobrepostos = 4 dias
+          const dentro = (a1, b1) => { const i = max(a1, ini), f2 = min(b1, fim); return i <= f2 ? diasEntre(i, f2) : 0; };
           let fer = 0, fal = 0;
-          for (const s of cada(ini, fim)) if (excl.has(s)) { if (exclFerias.has(s)) fer++; else fal++; }
+          if (v.excluiFerias) for (const f of p.ferias) for (const [a1, b1] of f.gozos || []) fer += dentro(a1, b1);
+          for (const f of p.faltas) if ((f.justificada && v.excluiFaltaJust) || (!f.justificada && v.excluiFaltaNaoJust)) fal += dentro(f.ini, f.fim || f.ini);
           dias = Math.max(0, Math.min(diasNoMes(m) - fer, 30) - fal);
         }
         const fator = Math.min(1, dias / Math.min(diasNoMes(m), 30));
