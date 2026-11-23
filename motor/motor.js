@@ -149,6 +149,7 @@
     const aviso = diasAviso(ct);
     const fimProjetado = ct.projetaAviso ? addDias(ct.demissao, aviso) : ct.demissao;
     const porId = Object.fromEntries(p.verbas.map(v => [v.id, v]));
+    const zera = v => !!(v && v.pjc && v.pjc.zeraValorNegativo);
     const res = {};                       // id -> {verba, ocorrencias}
     const avisos = [];
 
@@ -167,6 +168,7 @@
 
     function calculada(v) {
       const F = v.formula, excl = diasExcluidos(p, v), oc = [];
+      const exclFerias = new Set(); if (v.excluiFerias) for (const f of p.ferias) for (const [a1, b1] of f.gozos || []) for (const s of cada(a1, b1)) exclFerias.add(s);
       // o período é o da verba: reintegração, estabilidade e pensão correm depois da demissão
       const a = max(v.ini, ct.admissao), b = v.fim || ct.demissao;
       for (let m = ym(a); m <= ym(b); m = addMes(m, 1)) {
@@ -181,11 +183,20 @@
         for (const id of F.baseVerbas || []) { const o = (res[id] || exec(id)).ocorrencias.find(x => ym(x.ini) === m); if (o) baseVer += o.devidoIntegral ?? o.devido; }
         const lanc = (v.lancamentos || {})[ini] || {};
         let dias = 0; for (const s of cada(ini, fim)) if (!excl.has(s)) dias++;
+        // mês cheio com exclusão: férias contam em dias corridos e faltas em dias do mês comercial (30):
+        // dias = min(dias do mês − férias, 30) − faltas. Fabio 07/2020 (falta 01 a 05) = 25; Fabio 03/2020
+        // (férias 01 a 18) = 13; Alisson 12/2022 (férias 22 a 31) = 21. Mês parcial: dias corridos
+        if (ini === `${m}-01` && fim === fimMes(m) && dias < diasNoMes(m)) {
+          let fer = 0, fal = 0;
+          for (const s of cada(ini, fim)) if (excl.has(s)) { if (exclFerias.has(s)) fer++; else fal++; }
+          dias = Math.max(0, Math.min(diasNoMes(m) - fer, 30) - fal);
+        }
         const fator = Math.min(1, dias / Math.min(diasNoMes(m), 30));
         const proporcional = v.proporcional || F.proporcionalBase;
         const baseInt = r2(baseTab + baseVer);
         const base = r2((proporcional ? r2(baseTab * fator) : baseTab) + baseVer);
-        const div = F.divisorTipo === 'CARGA_HORARIA' ? ct.cargaHoraria
+        // DIAS_UTEIS também em verba calculada (Marcos: RSR sobre horas extras = horas do mês / dias úteis × repousos)
+        const div = F.divisorTipo === 'CARGA_HORARIA' ? ct.cargaHoraria : F.divisorTipo === 'DIAS_UTEIS' ? cal.uteis(ini, fim)
           : F.divisorTipo === 'IMPORTADO_DO_CARTAO' ? (F.cartoesDivisor || []).reduce((s, id) => s + cartao(id, m), 0) : (F.divisor || 1);
         let qtd = F.qtd ?? 1;
         // quantidade do cartão. Montador: fator e colunas a subtrair (Marcos: 30 min por dia =
@@ -218,7 +229,8 @@
       for (const id of v.formula.baseVerbas || []) {
         const o = (res[id] || exec(id)).ocorrencias.find(x => ym(x.ini) === m);
         if (!o) continue;
-        tot += v.reflexo.fracao === 'INTEGRALIZAR' ? o.devidoIntegral - (o.pagoIntegral || 0) : o.devido - o.pago;
+        const d = v.reflexo.fracao === 'INTEGRALIZAR' ? o.devidoIntegral - (o.pagoIntegral || 0) : o.devido - o.pago;
+        tot += zera(porId[id]) ? Math.max(0, d) : d;
       }
       return r2(tot);
     }
@@ -232,9 +244,10 @@
         const oc = (res[id] || exec(id)).ocorrencias.filter(o => ym(o.ini) >= ym(de) && ym(o.ini) <= ym(ate));
         if (!oc.length) continue;
         const ultimo = oc.find(o => ym(o.ini) === ym(ref)) || oc[oc.length - 1];
-        if (v.reflexo.comportamento === 'MEDIA_PELO_VALOR') { tot += oc.reduce((s, o) => s + o.devido - o.pago, 0) / oc.length; continue; }
+        const z = zera(porId[id]);
+        if (v.reflexo.comportamento === 'MEDIA_PELO_VALOR') { tot += oc.reduce((s, o) => s + (z ? Math.max(0, o.devido - o.pago) : o.devido - o.pago), 0) / oc.length; continue; }
         const unit = o => (o.base || 0) * (o.mult ?? 1) / (o.divisor || 1);
-        const qd = oc.map(o => Math.round(((o.qtd || 0) - (unit(o) ? o.pago / unit(o) : 0)) * 1e4) / 1e4);
+        const qd = oc.map(o => { const q = Math.round(((o.qtd || 0) - (unit(o) ? o.pago / unit(o) : 0)) * 1e4) / 1e4; return z ? Math.max(0, q) : q; });
         tot += qd.reduce((s, x) => s + x, 0) / oc.length * unit(ultimo);
       }
       return Math.max(0, r2(tot));        // média negativa (pago acima do devido) não gera reflexo
@@ -281,7 +294,9 @@
               const parteSalarial = f.abono && f.prazo ? (f.prazo - (f.diasAbono || 0)) / f.prazo : 1;
               // férias fracionadas: cada período de gozo gera uma ocorrência proporcional aos seus dias
               const totalGozo = f.gozos.reduce((s, [a, b]) => s + diasEntre(a, b), 0);
-              const prazoGozo = Math.max(totalGozo, (f.prazo || 30) - (f.abono ? f.diasAbono || 0 : 0));
+              // cada período vale dias/30 (com abono, dias/(30 − abono)), mesmo com direito reduzido: Vinícius
+              // 2022/2023 tinha 21 dias (5 + 5 + 11) e o contador paga 21/30, não 21/21
+              const prazoGozo = 30 - (f.abono ? f.diasAbono || 0 : 0);
               for (const [gi, gf] of f.gozos) {
                 const parte = diasEntre(gi, gf) / prazoGozo;
                 push(gi, gf, baseReflexo(v, ym(gi), ini, min(fimAq, gi)), F.divisor || 12, avos, { aquisitivoIni: ini, feriasGozadas: true, parteSalarial });
@@ -309,7 +324,15 @@
       res[id] = { verba: v, ocorrencias: [] };      // evita laço em referências circulares
       let oc = [];
       if (v.tipo === 'Calculada') oc = calculada(v);
-      else if (v.tipo === 'Reflexo') oc = reflexo(v);
+      else if (v.tipo === 'Reflexo') {
+        oc = reflexo(v);
+        // valores digitados no PJe-Calc também valem no reflexo (Damásio: 13º e aviso sobre adicional noturno);
+        // duas ocorrências na mesma data (férias na demissão) se separam pelo período aquisitivo
+        for (const o of oc) {
+          const inf = (v.informados || []).find(x => x.ini === o.ini && (!x.aquisitivoIni || !o.aquisitivoIni || x.aquisitivoIni === o.aquisitivoIni));
+          if (inf) { o.devido = inf.devido ?? o.devido; o.pago = inf.pago ?? 0; o.devidoIntegral = inf.devidoIntegral ?? o.devido; o.origem = 'informado'; }
+        }
+      }
       // verba informada (valores digitados mês a mês): vencimento no fim do período da parcela mensal
       else oc = (v.informados || []).map(o => ({ ini: o.ini, fim: o.fim, vencimento: v.ocorrencia === 'MENSAL' ? (o.fim || o.ini) : o.ini,
         devido: o.devido || 0, pago: o.pago || 0, devidoIntegral: o.devidoIntegral ?? o.devido ?? 0, pagoIntegral: o.pagoIntegral ?? o.pago ?? 0, origem: 'informado' }));
@@ -329,7 +352,8 @@
         const modo = ct.indicesAcumulados;
         const mesmoMes = modo === 'MES_DO_VENCIMENTO' || (modo === 'MES_SUBSEQUENTE_E_MES_DO_VENCIMENTO' && v.ocorrencia !== 'MENSAL');
         o.indice = fatorCorrecao(T, p.atualizacao, liq, o.vencimento, OPCOES.tabelasAte, mesmoMes);
-        o.diferenca = r2(o.devido - o.pago);
+        // "zerar valor negativo" do PJe-Calc: mês com pago acima do devido não abate dos outros (Damásio)
+        o.diferenca = r2(zera(v) ? Math.max(0, o.devido - o.pago) : o.devido - o.pago);
         o.corrigido = r2(o.diferenca * o.indice);
         sd += o.devido; sp += o.pago; sc += o.corrigido;
       }
@@ -341,6 +365,7 @@
     const out = { diasAviso: aviso, fimProjetado, verbas, avisos,
                   totais: { devido: r2(totDevido), pago: r2(totPago), corrigido: r2(totCorrigido) } };
     encargos(out, caso, T);
+    out.avisos.push(...avisosJuros); avisosJuros.clear();
     out.avisos = [...new Set(out.avisos)];
     out.verbas.forEach(v => delete v.verba);
     return out;
@@ -424,15 +449,47 @@
   // Taxa acumulada (em %) de uma parcela vencida em `venc`: TR diária (TRD, juros simples) do dia
   // seguinte ao vencimento até a véspera do ajuizamento e taxa legal diária (art. 406 do CC) do
   // ajuizamento até a liquidação. Regra conferida contra o PJe-Calc (ADC 58 e Lei 14.905/2024).
+  //
+  // Combinação de juros (Correção, Juros e Multa > combinar com outro juros a partir de): o juros
+  // padrão (TRD) corre até a véspera da 1ª combinação e cada combinação vale da sua data até a
+  // próxima (ou a liquidação). A data nem sempre é o ajuizamento: Eraldo e Leandro têm taxa legal
+  // a partir de 30/08/2024 com ajuizamento em 2026. Regras de cada juros (conferidas no PJe-Calc):
+  //  - TAXA_LEGAL: soma da taxa legal diária.
+  //  - SELIC (André, Vinícius): tabela mensal da SELIC Fazenda; 1º mês pró-rata pelos dias
+  //    (do dia de início ao fim do mês), meses cheios até 2 meses antes da liquidação e 1% no mês
+  //    anterior à liquidação.
+  //  - SELIC_FAZENDA (Damásio, EC 113/2021): mesma tabela, 1º mês pró-rata e meses cheios até o mês
+  //    anterior à liquidação.
   function taxaJuros(T, ct, at, venc) {
     let t = 0;
     const ini = addDias(venc, 1), aj = ct.ajuizamento, liq = ct.liquidacao, ate = OPCOES.tabelasAte;
     const val = x => (x == null ? 0 : Array.isArray(x) ? (ate && x[1] && x[1] > ate ? 0 : x[0]) : x);
-    if (at.jurosPreJudicial !== false) for (let s = ini; s < aj; s = addDias(s, 1)) t += val(T.trDiaria[s]);
-    const tl0 = max(aj, ini);
-    if (!OPCOES.semTaxaLegal) for (let s = tl0; s <= liq; s = addDias(s, 1)) t += val(T.taxaLegalDiaria[s]);
+    const combos = (at.combinacoesJuros || []).filter(c => c.juros && c.aPartir).sort((a, b) => (a.aPartir < b.aPartir ? -1 : 1));
+    const lista = combos.length ? combos : [{ juros: OPCOES.semTaxaLegal ? null : 'TAXA_LEGAL', aPartir: aj }];
+    if (at.jurosPreJudicial !== false) for (let s = ini; s < lista[0].aPartir; s = addDias(s, 1)) t += val(T.trDiaria[s]);
+    lista.forEach((c, i) => {
+      const de = max(c.aPartir, ini), ate_ = i + 1 < lista.length ? addDias(lista[i + 1].aPartir, -1) : liq;
+      if (de > ate_) return;
+      if (c.juros === 'TAXA_LEGAL') { for (let s = de; s <= ate_; s = addDias(s, 1)) t += val(T.taxaLegalDiaria[s]); return; }
+      if (c.juros === 'SELIC' || c.juros === 'SELIC_FAZENDA') {
+        // parcela já vencida no início da combinação: pró-rata do mês de início. Parcela que vence depois:
+        // SELIC a partir do mês seguinte ao vencimento, sem pró-rata (André: vencimento 26/06 só corre de julho)
+        const tab = T.selicFazenda || {}, ultimo = c.juros === 'SELIC' ? addMes(ym(ate_), -2) : addMes(ym(ate_), -1);
+        if (ym(de) >= ym(ate_)) return;                       // começa no mês da liquidação: sem juros
+        let m0 = ym(de);
+        if (ini <= c.aPartir) {
+          const dm = diasNoMes(m0);
+          if (m0 <= ultimo) t += val(tab[m0]) * (dm - +de.slice(8, 10) + 1) / dm;
+        } else m0 = addMes(ym(venc), 0);
+        for (let m = addMes(m0, 1); m <= ultimo; m = addMes(m, 1)) t += val(tab[m]);
+        if (c.juros === 'SELIC') t += 1;
+        return;
+      }
+      if (c.juros) avisosJuros.add(`Juros ${c.juros} ainda não suportados: conferir no PJe-Calc`);
+    });
     return t;
   }
+  const avisosJuros = new Set();
 
   // SELIC do INSS (art. 43 da Lei 8.212/91): soma das taxas mensais a partir da competência
   // (13º de dezembro: a partir do mês anterior), publicadas até o mês anterior à liquidação, mais 1%.
