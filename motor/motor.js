@@ -288,24 +288,27 @@
           const fimAq = addDias(S(new Date(Date.UTC(y + 1, m - 1, d))), -1);
           const f = lista[ini], completo = fimAq <= fimProjetado;
           const avos = completo ? 12 : avosAquisitivo(ini, fimProjetado);
-          if (avos > 0 && (!v.ini || fimAq >= v.ini)) {
-            if (f && f.situacao === 'GOZADAS' && f.gozos.length) {
-              // férias gozadas: incidem INSS/FGTS/IR, menos a parte do abono pecuniário (indenizatória)
-              const parteSalarial = f.abono && f.prazo ? (f.prazo - (f.diasAbono || 0)) / f.prazo : 1;
-              // férias fracionadas: cada período de gozo gera uma ocorrência proporcional aos seus dias
-              const totalGozo = f.gozos.reduce((s, [a, b]) => s + diasEntre(a, b), 0);
-              // cada período vale dias/30 (com abono, dias/(30 − abono)), mesmo com direito reduzido: Vinícius
-              // 2022/2023 tinha 21 dias (5 + 5 + 11) e o contador paga 21/30, não 21/21
-              const prazoGozo = 30 - (f.abono ? f.diasAbono || 0 : 0);
-              for (const [gi, gf] of f.gozos) {
-                const parte = diasEntre(gi, gf) / prazoGozo;
-                push(gi, gf, baseReflexo(v, ym(gi), ini, min(fimAq, gi)), F.divisor || 12, avos, { aquisitivoIni: ini, feriasGozadas: true, parteSalarial });
-                const o = oc[oc.length - 1]; o.devido = r2(o.base * o.mult * o.qtd / o.divisor * parte); o.parteGozo = parte;
-              }
-            } else if (!(f && f.situacao === 'PERDIDAS')) {
-              // férias indenizadas ou proporcionais na rescisão: natureza indenizatória
-              push(ct.demissao, ct.demissao, baseReflexo(v, ym(ct.demissao), ini, min(fimAq, ct.demissao)), F.divisor || 12, avos, { aquisitivoIni: ini, feriasGozadas: false, parteSalarial: 0 });
+          if (avos > 0 && f && f.situacao === 'GOZADAS' && f.gozos.length) {
+            // férias gozadas (regra do contador, conferida no Anderson, Vinícius e Reinaldo):
+            //  - cada período de gozo é uma ocorrência e a fração dos dias vai na BASE: valor × dias/30
+            //    (com abono, dias/(30 − abono)); o PJe-Calc recalcula devido = base × mult × avos / 12
+            //  - o corte é pela data do gozo, não pelo período aquisitivo: aquisitivo anterior ao início da verba
+            //    entra se o gozo foi depois (Anderson: aquisitivo 2018/2019 gozado em 2020)
+            //  - gozo depois do fim do período concessivo é pago em dobro (art. 137 da CLT)
+            const parteSalarial = f.abono && f.prazo ? (f.prazo - (f.diasAbono || 0)) / f.prazo : 1;
+            const prazoGozo = 30 - (f.abono ? f.diasAbono || 0 : 0);
+            const fimConcessivo = addDias(addMes(ym(addDias(fimAq, 1)), 12) + addDias(fimAq, 1).slice(7), -1);
+            for (const [gi, gf] of f.gozos) {
+              if ((v.ini && gi < v.ini) || gi > (v.fim || fimProjetado)) continue;
+              const parte = diasEntre(gi, gf) / prazoGozo;
+              const base = r2(baseReflexo(v, ym(gi), ini, min(fimAq, gi)) * parte);
+              const dobra = f.dobra || gi > fimConcessivo;
+              push(gi, gf, base, F.divisor || 12, avos, { aquisitivoIni: ini, feriasGozadas: true, parteSalarial, dobra });
+              const o = oc[oc.length - 1]; if (dobra) o.devido = r2(o.base * o.mult * o.qtd / o.divisor * 2);
             }
+          } else if (avos > 0 && (!v.ini || fimAq >= v.ini) && !(f && f.situacao === 'PERDIDAS')) {
+            // férias indenizadas ou proporcionais na rescisão: natureza indenizatória
+            push(ct.demissao, ct.demissao, baseReflexo(v, ym(ct.demissao), ini, min(fimAq, ct.demissao)), F.divisor || 12, avos, { aquisitivoIni: ini, feriasGozadas: false, parteSalarial: 0 });
           }
           ini = addDias(fimAq, 1);
         }
