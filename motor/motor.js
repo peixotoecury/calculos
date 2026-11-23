@@ -181,7 +181,10 @@
         else if (F.baseTabelada && F.baseTabelada !== 'null') avisos.push(`${v.nome}: base ${F.baseTabelada} ainda não suportada`);
         // outras verbas que compõem a base (ex.: hora extra sobre salário + adicionais): valor devido do mês
         let baseVer = 0;
-        for (const id of F.baseVerbas || []) { const o = (res[id] || exec(id)).ocorrencias.find(x => ym(x.ini) === m); if (o) baseVer += o.devidoIntegral ?? o.devido; }
+        // verba que serve de base: "integralizar" do item no PJe-Calc decide entre o mês cheio e o valor proporcional
+        // (Flávio: REF. INSAL. EM ADICIONAL NOTURNO com integralizar NÃO usa a insalubridade proporcional do mês)
+        (F.baseVerbas || []).forEach((id, i) => { const o = (res[id] || exec(id)).ocorrencias.find(x => ym(x.ini) === m); if (!o) return;
+          const integ = ((v.pjc || {}).integralizar || [])[i]; baseVer += integ === 'NAO' ? o.devido : (o.devidoIntegral ?? o.devido); });
         const lanc = (v.lancamentos || {})[ini] || {};
         let dias = 0; for (const s of cada(ini, fim)) if (!excl.has(s)) dias++;
         // mês cheio com exclusão: férias contam em dias corridos e faltas em dias do mês comercial (30):
@@ -356,8 +359,16 @@
               if (saldo) push(ct.demissao, ct.demissao, r2(baseReflexo(v, ym(ct.demissao), ini, min(fimAq, ct.demissao)) * saldo / prazoGozo), F.divisor || 12, avos, { aquisitivoIni: ini, feriasGozadas: false, parteSalarial: 0 });
             }
           } else if (avos > 0 && (!v.ini || fimAq >= v.ini) && !(f && f.situacao === 'PERDIDAS')) {
-            // férias indenizadas ou proporcionais na rescisão: natureza indenizatória
-            push(ct.demissao, ct.demissao, baseReflexo(v, ym(ct.demissao), ini, min(fimAq, ct.demissao)), F.divisor || 12, avos, { aquisitivoIni: ini, feriasGozadas: false, parteSalarial: 0 });
+            // férias indenizadas ou proporcionais na rescisão: natureza indenizatória. Duração pelo art. 130 da CLT
+            // (faltas injustificadas no aquisitivo) quando o período não tem registro de férias, como o PJe-Calc faz
+            // (Vinícius: 10 faltas injustificadas em 2023/2024 = 24 dias, base × 24/30)
+            let prazo = f && f.prazo ? f.prazo : 30;
+            if (!f) {
+              let n = 0;
+              for (const x of p.faltas) if (!x.justificada) { const i = max(x.ini, ini), j = min(x.fim || x.ini, min(fimAq, ct.demissao)); if (i <= j) n += diasEntre(i, j); }
+              prazo = n <= 5 ? 30 : n <= 14 ? 24 : n <= 23 ? 18 : n <= 32 ? 12 : 0;
+            }
+            push(ct.demissao, ct.demissao, r2(baseReflexo(v, ym(ct.demissao), ini, min(fimAq, ct.demissao)) * prazo / 30), F.divisor || 12, avos, { aquisitivoIni: ini, feriasGozadas: false, parteSalarial: 0 });
           }
           ini = addDias(fimAq, 1);
         }
@@ -705,13 +716,20 @@
     });
     const honorReclamante = r2(honorarios.filter(h => h.devedor === 'RECLAMANTE').reduce((s, h) => s + h.valor, 0));
     const C = E.custas || {};
-    const custas = C.reclamado === 'INFORMADA' ? (C.valorReclamado || 0) : 0;
-    if (C.reclamado && !['INFORMADA', 'NAO_SE_APLICA'].includes(C.reclamado)) out.avisos.push(`Custas ${C.reclamado} ainda não calculadas`);
+    let custas = C.reclamado === 'INFORMADA' ? (C.valorReclamado || 0) : 0;
+    if (C.reclamado && !['INFORMADA', 'NAO_SE_APLICA', 'CALCULADA_2_POR_CENTO'].includes(C.reclamado)) out.avisos.push(`Custas ${C.reclamado} ainda não calculadas`);
 
     const liquido = r2(bruto - depositoFgts - deducaoInss - irpf.total - honorReclamante);
     const somaI = k => r2(inss.reduce((s, l) => s + l[k] + l['juros_' + k], 0));
     const inssReclamante = somaI('segurado'), inssReclamado = r2(somaI('empresa') + somaI('sat') + somaI('terceiros'));
     const honorReclamado = r2(honorarios.filter(h => h.devedor !== 'RECLAMANTE').reduce((s, h) => s + h.valor, 0));
+    // custas de 2% (art. 789 da CLT): base = tudo que a reclamada paga, menos as próprias custas (bruto devido ao
+    // reclamante + débitos da reclamada); mínimo R$ 10,64 e máximo de 4 tetos do RGPS, como no PJe-Calc
+    // (Flávio: 7.195,22 + 843,66 + 653,36 + 2.003,71 + 1.269,58 + 4.805,00 = 16.770,53 → 335,41)
+    if (C.reclamado === 'CALCULADA_2_POR_CENTO') {
+      const baseCustas = r2(liquido + depositoFgts + inssReclamante + inssReclamado + irpf.total + honorReclamado);
+      custas = r2(Math.min(Math.max(baseCustas * 0.02, 10.64), 33902.20));
+    }
     Object.assign(out, { juros, inss, fgts, irpf, honorarios });
     Object.assign(out.totais, {
       jurosVerbas, brutoVerbas, bruto, depositoFgts, deducaoInss, liquido,
