@@ -709,9 +709,10 @@
     return res;
   }
 
-  // feriadosLocais: os cálculos do contador não contam feriado estadual/municipal no RSR
+  // feriadosLocais: feriado estadual e municipal entram no RSR (decisão da Carol em 23/11/2026, como manda a
+  // lei e como o contador fez em Damásio, Marcos, Danilo e Flávio; em Reinaldo e Anderson ele não contou)
   // (Reinaldo: 09/07 e 20/11 em Santo André ficaram de fora). Padrão = igual ao contador.
-  const OPCOES = { feriadosLocais: false, tabelasAte: null, indiceAte: null, cartaoDasBatidas: true };
+  const OPCOES = { feriadosLocais: true, tabelasAte: null, indiceAte: null, cartaoDasBatidas: true };
   function apurarCartoes(caso, T) {
     // no cartão o PJe-Calc considera os feriados estaduais (09/07) e municipais (20/11 e 08/04 em Santo André)
     const cal = calendario(T, caso.parametros.contrato, { estadual: true, municipal: true }), out = {};
