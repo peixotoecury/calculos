@@ -21,6 +21,7 @@
   const addMes = (m, k) => { let [y, mm] = m.split('-').map(Number); mm += k; y += Math.floor((mm - 1) / 12); mm = ((mm - 1) % 12 + 12) % 12 + 1; return `${y}-${String(mm).padStart(2, '0')}`; };
   const fimMes = m => S(new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)));
   const diasNoMes = m => +fimMes(m).slice(8);
+  const addAno = (d, n) => `${+d.slice(0, 4) + n}${d.slice(4)}`;
   const diasEntre = (a, b) => Math.round((D(b) - D(a)) / 864e5) + 1;   // inclusivo
   const max = (a, b) => (a > b ? a : b), min = (a, b) => (a < b ? a : b);
   const cada = function* (a, b) { for (let s = a; s <= b; s = addDias(s, 1)) yield s; };
@@ -245,14 +246,42 @@
         if (!oc.length) continue;
         const ultimo = oc.find(o => ym(o.ini) === ym(ref)) || oc[oc.length - 1];
         const z = zera(porId[id]);
-        if (v.reflexo.comportamento === 'MEDIA_PELO_VALOR') { tot += oc.reduce((s, o) => s + (z ? Math.max(0, o.devido - o.pago) : o.devido - o.pago), 0) / oc.length; continue; }
+        // 13º pela média (ano civil): soma do ano dividida por 12, não pelo número de meses com valor; com fração
+        // "integralizar", o mês cheio (Marcos 2022: 4 meses × 1.090,32 / 12 = 363,44; 2021: 7.426,32 / 12 = 618,86)
+        const n = v.reflexo.periodoMedia === 'ANO_CIVIL' && v.reflexo.comportamento === 'MEDIA_PELO_VALOR' ? 12 : oc.length;
+        const integral = v.reflexo.fracao === 'INTEGRALIZAR';
+        if (v.reflexo.comportamento === 'MEDIA_PELO_VALOR') { tot += oc.reduce((s, o) => { const d = integral ? (o.devidoIntegral ?? o.devido) - (o.pagoIntegral ?? o.pago) : o.devido - o.pago; return s + (z ? Math.max(0, d) : d); }, 0) / n; continue; }
         const unit = o => (o.base || 0) * (o.mult ?? 1) / (o.divisor || 1);
         const qd = oc.map(o => { const q = Math.round(((o.qtd || 0) - (unit(o) ? o.pago / unit(o) : 0)) * 1e4) / 1e4; return z ? Math.max(0, q) : q; });
-        tot += qd.reduce((s, x) => s + x, 0) / oc.length * unit(ultimo);
+        tot += qd.reduce((s, x) => s + x, 0) / n * unit(ultimo);
       }
       return Math.max(0, r2(tot));        // média negativa (pago acima do devido) não gera reflexo
     }
+    // Média das férias (período aquisitivo), regra do contador conferida em 49 de 69 reflexos (Anderson,
+    // Alisson, Vinícius, Marcos): entram os meses com 15 dias ou mais dentro do aquisitivo; a soma é dividida
+    // pelo número desses meses (os avos, mesmo sem ocorrência antes do início da verba); o valor da hora é
+    // o do mês do gozo; média negativa fica negativa (Vinícius 07/2024: -0,46)
+    function valorMediaAquisitivo(v, ref, de, ate) {
+      const meses = [];
+      for (let m = ym(de); m <= ym(ate); m = addMes(m, 1)) if (diasEntre(max(de, `${m}-01`), min(ate, fimMes(m))) >= 15) meses.push(m);
+      if (!meses.length) return 0;
+      let tot = 0;
+      for (const id of v.formula.baseVerbas || []) {
+        const todas = (res[id] || exec(id)).ocorrencias;
+        const oc = todas.filter(o => meses.includes(ym(o.ini)));
+        const z = zera(porId[id]);
+        if (v.reflexo.comportamento === 'MEDIA_PELO_VALOR') { tot += oc.reduce((s, o) => s + (z ? Math.max(0, o.devido - o.pago) : o.devido - o.pago), 0) / meses.length; continue; }
+        const unit = o => (o.base || 0) * (o.mult ?? 1) / (o.divisor || 1);
+        const ant = todas.filter(o => ym(o.ini) <= ym(ref) && unit(o));
+        const hora = todas.find(o => ym(o.ini) === ym(ref) && unit(o)) || ant[ant.length - 1] || oc[oc.length - 1];
+        if (!hora) continue;
+        const soma = oc.reduce((s, o) => { const q = Math.round(((o.qtd || 0) - (unit(o) ? o.pago / unit(o) : 0)) * 1e4) / 1e4; return s + (z ? Math.max(0, q) : q); }, 0);
+        tot += soma / meses.length * unit(hora);
+      }
+      return r2(tot);
+    }
     function baseReflexo(v, m, de, ate) {
+      if (v.ocorrencia === 'PERIODO_AQUISITIVO' && v.reflexo.comportamento && v.reflexo.comportamento.startsWith('MEDIA')) return valorMediaAquisitivo(v, `${m}-01`, de, ate);
       if (v.reflexo.comportamento && v.reflexo.comportamento.startsWith('MEDIA')) return valorMedia(v, `${m}-01`, de, ate);
       return valorBase(v, m);
     }
@@ -288,23 +317,38 @@
           const fimAq = addDias(S(new Date(Date.UTC(y + 1, m - 1, d))), -1);
           const f = lista[ini], completo = fimAq <= fimProjetado;
           const avos = completo ? 12 : avosAquisitivo(ini, fimProjetado);
-          if (avos > 0 && f && f.situacao === 'GOZADAS' && f.gozos.length) {
+          if (avos > 0 && f && (f.situacao === 'GOZADAS' || f.situacao === 'GOZADAS_PARCIALMENTE') && f.gozos.length) {
             // férias gozadas (regra do contador, conferida no Anderson, Vinícius e Reinaldo):
             //  - cada período de gozo é uma ocorrência e a fração dos dias vai na BASE: valor × dias/30
             //    (com abono, dias/(30 − abono)); o PJe-Calc recalcula devido = base × mult × avos / 12
             //  - o corte é pela data do gozo, não pelo período aquisitivo: aquisitivo anterior ao início da verba
             //    entra se o gozo foi depois (Anderson: aquisitivo 2018/2019 gozado em 2020)
-            //  - gozo depois do fim do período concessivo é pago em dobro (art. 137 da CLT)
+            //  - dobra (art. 137 da CLT) só quando marcada no período (gozosDobra) ou nas férias (dobra): o contador
+            //    dobrou no Anderson e não no Marcos, ambos com gozo fora do concessivo; a decisão é que manda
             const parteSalarial = f.abono && f.prazo ? (f.prazo - (f.diasAbono || 0)) / f.prazo : 1;
             const prazoGozo = 30 - (f.abono ? f.diasAbono || 0 : 0);
-            const fimConcessivo = addDias(addMes(ym(addDias(fimAq, 1)), 12) + addDias(fimAq, 1).slice(7), -1);
-            for (const [gi, gf] of f.gozos) {
+            for (const [k, [gi, gf]] of f.gozos.entries()) {
               if ((v.ini && gi < v.ini) || gi > (v.fim || fimProjetado)) continue;
-              const parte = diasEntre(gi, gf) / prazoGozo;
-              const base = r2(baseReflexo(v, ym(gi), ini, min(fimAq, gi)) * parte);
-              const dobra = f.dobra || gi > fimConcessivo;
-              push(gi, gf, base, F.divisor || 12, avos, { aquisitivoIni: ini, feriasGozadas: true, parteSalarial, dobra });
-              const o = oc[oc.length - 1]; if (dobra) o.devido = r2(o.base * o.mult * o.qtd / o.divisor * 2);
+              const valor = baseReflexo(v, ym(gi), ini, min(fimAq, gi));
+              const dobra = !!(f.dobra || (f.gozosDobra || [])[k]);
+              // período com dobra que atravessa o fim do concessivo: os dias até o fim do concessivo são normais e
+              // os seguintes viram outra ocorrência, em dobro (Alisson: gozo de 15/07 a 13/08/2024, concessivo até
+              // 08/08/2024, dobra só de 09 a 13/08)
+              const fimConc = addDias(addAno(addDias(fimAq, 1), 1), -1);
+              // o PJe-Calc sempre divide o gozo no fim do concessivo; a dobra só vale para a 2ª parte, e só se marcada
+              // (Marcos: 02 a 13/01/2024 vira 02-07 e 08-13, sem dobra)
+              const partes = gf <= fimConc || gi > fimConc ? [[gi, gf, dobra && gi > fimConc]]
+                : [[gi, fimConc, false], [addDias(fimConc, 1), gf, dobra]];
+              for (const [a1, b1, dob] of partes) {
+                push(a1, b1, r2(valor * diasEntre(a1, b1) / prazoGozo), F.divisor || 12, avos, { aquisitivoIni: ini, feriasGozadas: true, parteSalarial, dobra: dob });
+                const o = oc[oc.length - 1]; if (dob) o.devido = r2(o.base * o.mult * o.qtd / o.divisor * 2);
+              }
+            }
+            // parcialmente gozadas: o saldo de dias é indenizado na demissão (Marcos 2025/2026: 14 dias gozados,
+            // 16 indenizados = valor × 16/30)
+            if (f.situacao === 'GOZADAS_PARCIALMENTE') {
+              const gozados = f.gozos.reduce((t, [a1, b1]) => t + diasEntre(a1, b1), 0), saldo = Math.max(0, prazoGozo - gozados);
+              if (saldo) push(ct.demissao, ct.demissao, r2(baseReflexo(v, ym(ct.demissao), ini, min(fimAq, ct.demissao)) * saldo / prazoGozo), F.divisor || 12, avos, { aquisitivoIni: ini, feriasGozadas: false, parteSalarial: 0 });
             }
           } else if (avos > 0 && (!v.ini || fimAq >= v.ini) && !(f && f.situacao === 'PERDIDAS')) {
             // férias indenizadas ou proporcionais na rescisão: natureza indenizatória
