@@ -127,6 +127,7 @@ table.mini tr.x td{background:var(--badbg)}
   .pecaform{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px}
   .pecaform label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted);font-weight:600}
   .pecaform input,.pecaform select{font:inherit;font-size:13.5px;padding:7px 9px;border:1px solid var(--line,#d6dde6);border-radius:8px;min-width:150px;color:inherit;background:#fff}
+  .card.imp.destaque{box-shadow:0 0 0 3px #00A9E0;transition:box-shadow .3s}
 </style>
 <link rel="stylesheet" href="visual.css">
 </head>
@@ -142,7 +143,7 @@ table.mini tr.x td{background:var(--badbg)}
     <nav class="nav">
       <a href="index.html">Cálculos da equipe</a>
       <a href="novo.html">Novo cálculo</a>
-      <a href="index.html?tipo=impugnacao" id="navImp">Impugnações</a>
+      <a href="index.html?tipo=impugnacao" id="navImp" onclick="const c=document.getElementById('cardImp'); if(c){event.preventDefault(); c.scrollIntoView({behavior:'smooth'}); c.classList.add('destaque'); setTimeout(()=>c.classList.remove('destaque'),2200);}">Impugnações</a>
       <a class="on" href="resultado.html">Resultado do cálculo</a>
       <a href="index.html#equipe" id="navEquipe" hidden>Equipe</a>
     </nav>
@@ -392,7 +393,7 @@ table.mini tr.x td{background:var(--badbg)}
         <div class="kpi"><div class="k">FGTS, INSS e IR</div><div class="v">${brl(t.inssReclamante + t.inssReclamado + t.fgts + t.impostoRenda)}</div><div class="s">encargos</div></div>
         <div class="kpi"><div class="k">Total do reclamado</div><div class="v">${brl(t.totalReclamado)}</div><div class="s">com honorários e custas</div></div>
       </section>
-      <div class="saidas"><button class="btn pri" type="button" id="btnPdf">Baixar PDF</button><button class="btn" type="button" id="btnXlsx">Baixar Excel</button><button class="btn" type="button" id="btnPjc" title="Arquivo para abrir no PJe-Calc (Cálculo > Importar)">Baixar PJC (PJe-Calc)</button>${idCentral ? '' : '<button class="btn" type="button" id="btnCentral">Salvar na central</button>'}
+      <div class="saidas"><button class="btn pri" type="button" id="btnPdf">Baixar PDF</button><button class="btn" type="button" id="btnXlsx">Baixar Excel</button><button class="btn" type="button" id="btnPjc" title="Arquivo para abrir no PJe-Calc (Cálculo > Importar)">Baixar PJC (PJe-Calc)</button><button class="btn" type="button" id="btnPeca" title="Manifestação, impugnação ou concordância em Word, no papel timbrado">Gerar peça (impugnação, manifestação, concordância)</button>${idCentral ? '' : '<button class="btn" type="button" id="btnCentral">Salvar na central</button>'}
         <span>PDF: o relatório abre na janela de impressão; escolha "Salvar como PDF".</span></div>
       ${selo}
       ${resumo}
@@ -451,6 +452,7 @@ table.mini tr.x td{background:var(--badbg)}
 
     document.getElementById('btnPdf').onclick = () => SaidasPC.abrirPdf(caso, r, pd);
     document.getElementById('btnXlsx').onclick = () => SaidasPC.baixarExcel(caso, r);
+    document.getElementById('btnPeca').onclick = () => { const c = document.getElementById('cardImp'); c.scrollIntoView({ behavior: 'smooth', block: 'start' }); c.classList.add('destaque'); setTimeout(() => c.classList.remove('destaque'), 2200); };
     // PJC: o PJe-Calc importa, liquida e refaz juros, FGTS, INSS e IR (conferido com os 14 casos do piloto)
     document.getElementById('btnPjc').onclick = async e => {
       const b = e.currentTarget, t = b.textContent;
